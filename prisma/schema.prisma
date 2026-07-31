@@ -1,13 +1,11 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Prisma schema for CRM Lead Tracker
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
 }
 
 // ── Lead ──────────────────────────────────────────
@@ -23,6 +21,7 @@ model Lead {
   source        String?                         // "Website", "Referral", "Cold Call", etc.
   staff         String?                         // Assigned staff name
   priority      String    @default("WARM")      // "HOT" | "WARM" | "COLD"
+  notes         String?   @db.Text
 
   // Communication tracking
   whatsappSent  Boolean   @default(false)
@@ -63,6 +62,7 @@ model Demo {
 
   followUpDate  DateTime?
   followUpNotes String?   @db.Text
+  followUpResult String?  @db.Text
 
   onboarding    Onboarding?
 
@@ -107,9 +107,9 @@ model Activity {
   lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   type        String    // "NOTE" | "STATUS_CHANGE" | "DEMO_SCHEDULED" | "DEMO_RESULT" | "ONBOARDING_UPDATE" | "CALL" | "WHATSAPP" | "FOLLOW_UP"
-  title       String    // Short description: "Status changed to Qualified"
-  description String?   @db.Text   // Detailed content (for notes)
-  performedBy String?              // Staff who did this
+  title       String    // Short description
+  description String?   @db.Text
+  performedBy String?
 
   createdAt   DateTime  @default(now())
 

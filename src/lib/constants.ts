@@ -36,8 +36,7 @@ export const LEAD_SOURCES = [
 // ── Demo Statuses ─────────────────────────────────
 export const DEMO_STATUSES = [
   { value: 'PENDING', label: 'Pending', color: 'amber' },
-  { value: 'SUCCESSFUL', label: 'Successful', color: 'emerald' },
-  { value: 'FAILED', label: 'Failed', color: 'rose' },
+  { value: 'COMPLETED', label: 'Completed', color: 'emerald' },
   { value: 'RESCHEDULED', label: 'Rescheduled', color: 'orange' },
   { value: 'NO_SHOW', label: 'No Show', color: 'gray' },
 ] as const
@@ -63,15 +62,9 @@ export const ACTIVITY_TYPES = {
   CREATED: { label: 'Lead Created', icon: '📥', color: 'blue' },
 } as const
 
-// ── Staff Members (simple list for v1) ────────────
-export const STAFF_MEMBERS = [
-  'Rahul',
-  'Priya',
-  'Amit',
-  'Neha',
-  'Vikram',
-  'Anjali',
-] as const
+// ── Staff Options ─────────────────────────────────
+export const LEAD_STAFF = ['Ritu', 'Pooja'] as const
+export const DEMO_STAFF = ['Jaspal', 'Raj'] as const
 
 // ── Onboarding Checklist Fields ───────────────────
 export const ONBOARDING_CHECKLIST = [
