@@ -103,7 +103,7 @@ export function FollowUpForm({
       <div className="pt-4 flex items-center justify-between gap-3 border-t">
         <Button 
           type="button" 
-          variant="outline" 
+          variant="secondary" 
           onClick={handleStartOnboarding}
           isLoading={isOnboardingPending}
           disabled={isPending}
