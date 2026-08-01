@@ -90,12 +90,11 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
           <thead>
             <tr>
               <th className="w-8 text-center text-gray-400 font-medium text-xs">#</th>
-              <th className="w-8 text-center">Pri</th>
+              <th className="w-24">Date</th>
               <th>Name</th>
               <th>Contact</th>
               <th>Address / City</th>
               <th>Type / Source</th>
-              <th>Staff</th>
               <th>Status</th>
               <th className="text-center">WA / Called</th>
               <th>Notes</th>
@@ -105,7 +104,7 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
           <tbody>
             {filteredLeads.length === 0 ? (
               <tr>
-                <td colSpan={11} className="text-center py-12 text-gray-500">
+                <td colSpan={10} className="text-center py-12 text-gray-500">
                   No leads found for this filter.
                 </td>
               </tr>
@@ -120,8 +119,8 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
                   <td className="text-center text-gray-400 text-xs font-medium" onClick={e => e.stopPropagation()}>
                     {index + 1}
                   </td>
-                  <td className="text-center cursor-pointer text-lg" title={priority?.label}>
-                    {priority?.emoji}
+                  <td className="text-sm text-gray-600 whitespace-nowrap">
+                    {formatDate(lead.createdAt)}
                   </td>
                   <td>
                     <div 
@@ -159,7 +158,6 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
                       <span className="text-xs text-gray-500">{lead.source || '—'}</span>
                     </div>
                   </td>
-                  <td>{lead.staff || '—'}</td>
                   <td>
                     {status && <Badge color={status.color}>{status.label}</Badge>}
                   </td>

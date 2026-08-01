@@ -12,6 +12,7 @@ export const LEAD_TYPES = [
   { value: 'B2B', label: 'B2B', color: 'blue' },
   { value: 'B2C', label: 'B2C', color: 'emerald' },
   { value: 'Both', label: 'Both', color: 'violet' },
+  { value: 'N/A', label: 'Not Known', color: 'gray' },
 ] as const
 
 // ── Lead Priorities ───────────────────────────────
