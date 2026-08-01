@@ -3,8 +3,9 @@
 import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { LEAD_TYPES, LEAD_PRIORITIES, LEAD_SOURCES, LEAD_STAFF, LEAD_STATUSES } from '@/lib/constants'
-import { createLeadAction, updateLeadAction } from '@/app/actions/leadActions'
+import { createLeadAction, updateLeadAction, deleteLeadAction } from '@/app/actions/leadActions'
 import { ActivityTimeline } from '@/components/leads/ActivityTimeline'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 export function LeadForm({ 
   initialData,
@@ -20,6 +21,7 @@ export function LeadForm({
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState(initialData?.status || 'NEW')
   const [activeTab, setActiveTab] = useState<'details' | 'activity'>('details')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   
   const [isCustomStaff, setIsCustomStaff] = useState(() => {
     if (!initialData?.staff) return false;
@@ -52,6 +54,26 @@ export function LeadForm({
       setError('An unexpected error occurred')
     } finally {
       setIsPending(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!initialData?.id) return;
+    setIsPending(true);
+    setError(null);
+    try {
+      const result = await deleteLeadAction(initialData.id);
+      if (result.success) {
+        onSuccess();
+      } else {
+        setError(result.error || 'Failed to delete lead');
+        setShowDeleteConfirm(false);
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsPending(false);
     }
   }
 
@@ -216,9 +238,14 @@ export function LeadForm({
         </div>
       </div>
 
-      <div className="pt-4 flex items-center justify-end gap-3 border-t">
-        <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
-        <Button type="submit" isLoading={isPending}>{initialData ? 'Save Changes' : 'Create Lead'}</Button>
+      <div className="pt-4 flex items-center justify-between border-t">
+        {initialData ? (
+          <Button type="button" variant="ghost" onClick={() => setShowDeleteConfirm(true)} disabled={isPending} className="text-rose-600 hover:text-rose-700 hover:bg-rose-50">Delete</Button>
+        ) : <div />}
+        <div className="flex items-center gap-3">
+          <Button type="button" variant="ghost" onClick={onCancel} disabled={isPending}>Cancel</Button>
+          <Button type="submit" isLoading={isPending}>{initialData ? 'Save Changes' : 'Create Lead'}</Button>
+        </div>
       </div>
     </form>
       ) : (
@@ -226,6 +253,17 @@ export function LeadForm({
           <ActivityTimeline leadId={initialData.id} activities={initialData.activities} />
         </div>
       )}
+
+      <ConfirmModal 
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Delete Lead"
+        description="Are you sure you want to delete this lead? This action cannot be undone and will permanently remove all associated activity history and demos."
+        confirmText="Delete permanently"
+        isDestructive={true}
+        isPending={isPending}
+      />
     </div>
   )
 }

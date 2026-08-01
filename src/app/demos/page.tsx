@@ -3,7 +3,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { DemoTable } from '@/components/demos/DemoTable'
 import { Button } from '@/components/ui/Button'
 import { CalendarPlus } from 'lucide-react'
-import { RefreshButton } from '@/components/ui/RefreshButton'
+import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,10 +18,12 @@ export default async function DemosPage() {
         action={
           <div className="flex items-center gap-3">
             {/* <RefreshButton /> */}
-            <Button>
-              <CalendarPlus className="w-4 h-4 mr-2" />
-              Schedule Demo
-            </Button>
+            <Link href="/leads">
+              <Button>
+                <CalendarPlus className="w-4 h-4 mr-2" />
+                Schedule via Leads
+              </Button>
+            </Link>
           </div>
         }
       />

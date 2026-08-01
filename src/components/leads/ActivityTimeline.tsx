@@ -3,7 +3,8 @@
 import { useState, useTransition } from 'react'
 import { formatDateTime } from '@/lib/utils'
 import { MessageSquare, FileText, Phone, Clock, Play, CheckCircle2, User, Send, Loader2 } from 'lucide-react'
-import { addActivityNoteAction } from '@/app/actions/leadActions'
+import { addActivityNoteAction, getLeadActivitiesAction } from '@/app/actions/leadActions'
+import { useEffect } from 'react'
 
 const getIconForType = (type: string) => {
   switch (type) {
@@ -18,10 +19,26 @@ const getIconForType = (type: string) => {
   }
 }
 
-export function ActivityTimeline({ leadId, activities }: { leadId: string, activities: any[] }) {
+export function ActivityTimeline({ leadId, activities: initialActivities }: { leadId: string, activities?: any[] }) {
   const [note, setNote] = useState('')
   const [isPending, startTransition] = useTransition()
   
+  // State for dynamically fetched activities
+  const [fetchedActivities, setFetchedActivities] = useState<any[]>(initialActivities || [])
+  const [isLoading, setIsLoading] = useState(!initialActivities)
+
+  useEffect(() => {
+    if (initialActivities) return // Already have data
+    let mounted = true
+    getLeadActivitiesAction(leadId).then((data) => {
+      if (mounted) {
+        setFetchedActivities(data)
+        setIsLoading(false)
+      }
+    })
+    return () => { mounted = false }
+  }, [leadId, initialActivities])
+
   // Create an optimistic activities list that we prepend to
   const [optimisticActivities, setOptimisticActivities] = useState<any[]>([])
 
@@ -49,7 +66,7 @@ export function ActivityTimeline({ leadId, activities }: { leadId: string, activ
     })
   }
 
-  const allActivities = [...optimisticActivities, ...(activities || [])]
+  const allActivities = [...optimisticActivities, ...fetchedActivities]
 
   return (
     <div className="flex flex-col h-full bg-gray-50/50">
@@ -74,7 +91,11 @@ export function ActivityTimeline({ leadId, activities }: { leadId: string, activ
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {allActivities.length === 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center items-center h-32">
+            <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+          </div>
+        ) : allActivities.length === 0 ? (
           <div className="text-center text-gray-500 text-sm py-8">
             No activity recorded yet.
           </div>

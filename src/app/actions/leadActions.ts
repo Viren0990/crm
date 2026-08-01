@@ -9,11 +9,15 @@ export async function getLeads() {
     orderBy: { updatedAt: 'desc' },
     include: {
       demo: true,
-      activities: {
-        orderBy: { createdAt: 'desc' },
-        take: 5
-      }
     }
+  })
+}
+
+// Get activities for a specific lead
+export async function getLeadActivitiesAction(leadId: string) {
+  return prisma.activity.findMany({
+    where: { leadId },
+    orderBy: { createdAt: 'desc' }
   })
 }
 
@@ -293,5 +297,24 @@ export async function importLeadsAction(leadsData: any[]) {
   } catch (error) {
     console.error('Failed to import leads:', error)
     return { success: false, error: 'Failed to import leads' }
+  }
+}
+
+// Delete an existing lead
+export async function deleteLeadAction(leadId: string) {
+  try {
+    await prisma.lead.delete({
+      where: { id: leadId }
+    })
+    
+    revalidatePath('/leads')
+    revalidatePath('/demos')
+    revalidatePath('/followups')
+    revalidatePath('/onboarding')
+    revalidatePath('/')
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to delete lead:', error)
+    return { success: false, error: 'Failed to delete lead.' }
   }
 }
