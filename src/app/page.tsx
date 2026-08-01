@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { StatsCard } from '@/components/dashboard/StatsCard'
 import { Users, Target, Rocket, CheckCircle2, TrendingUp, Calendar, Phone, AlertCircle } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
+import { RefreshButton } from '@/components/ui/RefreshButton'
 
 export default async function Dashboard() {
   const { stats, funnel, focus } = await getDashboardStats()
@@ -17,6 +18,11 @@ export default async function Dashboard() {
       <PageHeader 
         title="Dashboard" 
         description="Overview of your pipeline and recent activity" 
+        action={
+          <div className="flex items-center gap-3">
+            <RefreshButton />
+          </div>
+        }
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 stagger-children">
@@ -64,7 +70,7 @@ export default async function Dashboard() {
           <div className="flex-1 flex flex-col justify-center gap-3">
             {[
               { label: 'Total Leads', value: funnel.leads, color: 'bg-blue-500', width: '100%' },
-              { label: 'Contacted', value: funnel.contacted, color: 'bg-indigo-500', width: funnel.leads > 0 ? `${(funnel.contacted/funnel.leads)*100}%` : '0%' },
+              { label: 'Needs Call Back', value: funnel.contacted, color: 'bg-indigo-500', width: funnel.leads > 0 ? `${(funnel.contacted/funnel.leads)*100}%` : '0%' },
               { label: 'Demos Booked', value: funnel.demos, color: 'bg-amber-500', width: funnel.leads > 0 ? `${(funnel.demos/funnel.leads)*100}%` : '0%' },
               { label: 'Clients Onboarding', value: funnel.onboarding, color: 'bg-emerald-500', width: funnel.leads > 0 ? `${(funnel.onboarding/funnel.leads)*100}%` : '0%' },
             ].map((stage, i) => (

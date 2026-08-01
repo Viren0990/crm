@@ -1,7 +1,7 @@
 // ── Lead Statuses ─────────────────────────────────
 export const LEAD_STATUSES = [
   { value: 'NEW', label: 'New', color: 'blue' },
-  { value: 'CONTACTED', label: 'Contacted', color: 'indigo' },
+  { value: 'CONTACTED', label: 'Needs Call Back', color: 'indigo' },
   { value: 'QUALIFIED', label: 'Qualified', color: 'violet' },
   { value: 'DEMO_SCHEDULED', label: 'Demo Scheduled', color: 'amber' },
   { value: 'LOST', label: 'Lost', color: 'rose' },
