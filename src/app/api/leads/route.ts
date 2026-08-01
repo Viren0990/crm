@@ -52,13 +52,25 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
+    
+    // Normalize type from API requests (handle labels or different casings)
+    let normalizedType = body.type || 'N/A'
+    if (typeof normalizedType === 'string') {
+      const t = normalizedType.toLowerCase().trim()
+      if (t === 'b2b') normalizedType = 'B2B'
+      else if (t === 'b2c') normalizedType = 'B2C'
+      else if (t === 'both') normalizedType = 'Both'
+      else if (t === 'not known' || t === 'n/a') normalizedType = 'N/A'
+    }
+
     const lead = await prisma.lead.create({
       data: {
         ...body,
+        type: normalizedType,
         activities: {
           create: {
             type: 'CREATED',
-            title: 'Lead created',
+            title: 'Lead created via API',
             performedBy: body.staff || 'System',
           }
         }

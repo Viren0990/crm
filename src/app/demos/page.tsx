@@ -17,7 +17,7 @@ export default async function DemosPage() {
         description="Track upcoming demos and their outcomes."
         action={
           <div className="flex items-center gap-3">
-            <RefreshButton />
+            {/* <RefreshButton /> */}
             <Button>
               <CalendarPlus className="w-4 h-4 mr-2" />
               Schedule Demo

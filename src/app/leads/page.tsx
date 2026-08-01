@@ -17,7 +17,7 @@ export default async function LeadsPage() {
         description="Manage your incoming leads and track initial contact."
         action={
           <div className="flex items-center gap-3">
-            <RefreshButton />
+            {/* <RefreshButton /> */}
             <ImportCsvButton />
             <AddLeadButton />
           </div>

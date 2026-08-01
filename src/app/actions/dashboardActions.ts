@@ -12,7 +12,8 @@ export async function getDashboardStats() {
     totalDemos,
     totalOnboardings,
     todaysDemos,
-    newLeads
+    newLeads,
+    pendingFollowUps
   ] = await Promise.all([
     prisma.lead.count(),
     prisma.demo.count({ where: { status: { in: ['PENDING', 'RESCHEDULED'] } } }),
@@ -36,21 +37,19 @@ export async function getDashboardStats() {
       where: { status: 'NEW' },
       orderBy: { createdAt: 'desc' },
       take: 5
+    }),
+    prisma.demo.findMany({
+      where: {
+        status: 'COMPLETED',
+        followUpDate: {
+          lte: new Date(new Date().setHours(23,59,59,999))
+        }
+      },
+      include: { lead: true },
+      orderBy: { followUpDate: 'asc' },
+      take: 5
     })
   ])
-
-  // Get followups due today or overdue
-  const pendingFollowUps = await prisma.demo.findMany({
-    where: {
-      status: 'COMPLETED',
-      followUpDate: {
-        lte: new Date(new Date().setHours(23,59,59,999))
-      }
-    },
-    include: { lead: true },
-    orderBy: { followUpDate: 'asc' },
-    take: 5
-  })
 
   return {
     stats: {

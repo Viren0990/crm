@@ -159,7 +159,7 @@ export function LeadForm({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">Customer Type</label>
-            <select id="type" name="type" defaultValue={initialData?.type} className="w-full rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white">
+            <select id="type" name="type" defaultValue={initialData?.type || 'N/A'} className="w-full rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white">
               {LEAD_TYPES.map(t => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}

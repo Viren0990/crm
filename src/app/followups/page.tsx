@@ -15,7 +15,7 @@ export default async function FollowUpsPage() {
         description={`${followUps.length} follow-ups required`}
         action={
           <div className="flex items-center gap-3">
-            <RefreshButton />
+            {/* <RefreshButton /> */}
           </div>
         }
       />

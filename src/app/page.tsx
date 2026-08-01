@@ -20,7 +20,7 @@ export default async function Dashboard() {
         description="Overview of your pipeline and recent activity" 
         action={
           <div className="flex items-center gap-3">
-            <RefreshButton />
+            {/* <RefreshButton /> */}
           </div>
         }
       />
