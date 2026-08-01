@@ -24,6 +24,8 @@ export const LEAD_PRIORITIES = [
 
 // ── Lead Sources ──────────────────────────────────
 export const LEAD_SOURCES = [
+  'Meta ad',
+  'Google ad',
   'Website',
   'Referral',
   'Cold Call',

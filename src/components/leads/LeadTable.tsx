@@ -6,7 +6,7 @@ import { SlideOver } from '@/components/ui/SlideOver'
 import { LeadForm } from '@/components/leads/LeadForm'
 import { LEAD_STATUSES, LEAD_TYPES, LEAD_PRIORITIES } from '@/lib/constants'
 import { formatDate, getStaleLevel } from '@/lib/utils'
-import { AlertCircle, AlertTriangle, ArrowDownAZ, ArrowUpAZ, Search, Mail, MessageSquare } from 'lucide-react'
+import { AlertCircle, AlertTriangle, ArrowDownAZ, ArrowUpAZ, Search, Mail, MessageSquare, Download } from 'lucide-react'
 import { toggleLeadFieldAction } from '@/app/actions/leadActions'
 
 // Using any for leads for quick setup, typically you'd export types from Prisma
@@ -46,6 +46,40 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
     return sortOrder === 'desc' ? timeB - timeA : timeA - timeB
   })
 
+  const handleExportCsv = () => {
+    if (filteredLeads.length === 0) return;
+    
+    // Define headers
+    const headers = ['Name', 'Email', 'Phone', 'Company', 'City', 'Status', 'Type', 'Source', 'Notes', 'Created At'];
+    
+    // Map data
+    const csvData = filteredLeads.map(lead => [
+      `"${(lead.name || '').replace(/"/g, '""')}"`,
+      `"${(lead.email || '').replace(/"/g, '""')}"`,
+      `"${(lead.phone || '').replace(/"/g, '""')}"`,
+      `"${(lead.company || '').replace(/"/g, '""')}"`,
+      `"${(lead.city || '').replace(/"/g, '""')}"`,
+      `"${(lead.status || '').replace(/"/g, '""')}"`,
+      `"${(lead.type || '').replace(/"/g, '""')}"`,
+      `"${(lead.source || '').replace(/"/g, '""')}"`,
+      `"${(lead.notes || '').replace(/"/g, '""')}"`,
+      `"${new Date(lead.createdAt).toISOString()}"`
+    ]);
+    
+    // Combine headers and data
+    const csvString = [headers.join(','), ...csvData.map(row => row.join(','))].join('\n');
+    
+    // Create blob and download
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `leads_export_${activeTab.toLowerCase()}_${new Date().getTime()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Tabs Row */}
@@ -81,6 +115,13 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
         >
           {sortOrder === 'desc' ? <ArrowDownAZ className="w-4 h-4" /> : <ArrowUpAZ className="w-4 h-4" />}
           Sort
+        </button>
+        <button
+          onClick={handleExportCsv}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors shrink-0"
+        >
+          <Download className="w-4 h-4" />
+          Export
         </button>
       </div>
 
