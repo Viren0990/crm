@@ -89,9 +89,7 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
         <table>
           <thead>
             <tr>
-              <th className="w-8">
-                <input type="checkbox" className="rounded border-gray-300" />
-              </th>
+              <th className="w-8 text-center text-gray-400 font-medium text-xs">#</th>
               <th className="w-8 text-center">Pri</th>
               <th>Name</th>
               <th>Contact</th>
@@ -111,7 +109,7 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
                   No leads found for this filter.
                 </td>
               </tr>
-            ) : filteredLeads.map(lead => {
+            ) : filteredLeads.map((lead, index) => {
               const priority = LEAD_PRIORITIES.find(p => p.value === lead.priority)
               const status = LEAD_STATUSES.find(s => s.value === lead.status)
               const type = LEAD_TYPES.find(t => t.value === lead.type)
@@ -119,8 +117,8 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
 
               return (
                 <tr key={lead.id}>
-                  <td>
-                    <input type="checkbox" className="rounded border-gray-300" />
+                  <td className="text-center text-gray-400 text-xs font-medium" onClick={e => e.stopPropagation()}>
+                    {index + 1}
                   </td>
                   <td className="text-center cursor-pointer text-lg" title={priority?.label}>
                     {priority?.emoji}

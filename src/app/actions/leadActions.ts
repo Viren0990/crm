@@ -58,9 +58,11 @@ export async function createLeadAction(formData: FormData) {
           conductedBy: data.staff || 'TBD',
         }
       })
+      revalidatePath('/demos')
     }
 
     revalidatePath('/leads')
+    revalidatePath('/')
     return { success: true }
   } catch (error) {
     console.error('Failed to create lead:', error)
@@ -105,6 +107,16 @@ export async function updateLeadAction(leadId: string, formData: FormData) {
           }
         })
         revalidatePath('/leads')
+        revalidatePath('/demos')
+        revalidatePath('/')
+      }
+    } else {
+      // If status is changed away from DEMO_SCHEDULED, delete the demo if it's still pending
+      const existingDemo = await prisma.demo.findUnique({ where: { leadId } })
+      if (existingDemo && (existingDemo.status === 'PENDING' || existingDemo.status === 'RESCHEDULED')) {
+        await prisma.demo.delete({ where: { leadId } })
+        revalidatePath('/demos')
+        revalidatePath('/')
       }
     }
 
@@ -119,6 +131,10 @@ export async function updateLeadAction(leadId: string, formData: FormData) {
     })
 
     revalidatePath('/leads')
+    revalidatePath('/demos')
+    revalidatePath('/followups')
+    revalidatePath('/onboarding')
+    revalidatePath('/')
     return { success: true }
   } catch (error) {
     console.error('Failed to update lead:', error)
@@ -147,6 +163,7 @@ export async function toggleLeadFieldAction(leadId: string, field: 'whatsappSent
     })
 
     revalidatePath('/leads')
+    revalidatePath('/')
     return { success: true }
   } catch (error) {
     console.error(`Failed to toggle ${field}:`, error)
@@ -171,7 +188,29 @@ export async function updateLeadStatusAction(leadId: string, newStatus: string) 
       }
     })
 
+    if (newStatus !== 'DEMO_SCHEDULED') {
+      const existingDemo = await prisma.demo.findUnique({ where: { leadId } })
+      if (existingDemo && (existingDemo.status === 'PENDING' || existingDemo.status === 'RESCHEDULED')) {
+        await prisma.demo.delete({ where: { leadId } })
+        revalidatePath('/demos')
+      }
+    } else {
+      const existingDemo = await prisma.demo.findUnique({ where: { leadId } })
+      if (!existingDemo) {
+        await prisma.demo.create({
+          data: {
+            leadId,
+            type: 'Both',
+            scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // Default to tomorrow
+            conductedBy: 'TBD',
+          }
+        })
+        revalidatePath('/demos')
+      }
+    }
+
     revalidatePath('/leads')
+    revalidatePath('/')
     return { success: true }
   } catch (error) {
     console.error('Failed to update status:', error)
@@ -193,6 +232,7 @@ export async function addActivityNoteAction(leadId: string, note: string) {
     })
     
     revalidatePath('/leads')
+    revalidatePath('/')
     return { success: true }
   } catch (error) {
     console.error('Failed to add note:', error)

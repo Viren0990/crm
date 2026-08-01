@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+export async function OPTIONS(request: Request) {
+  return NextResponse.json({}, { headers: corsHeaders })
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const search = searchParams.get('search')
@@ -32,10 +42,10 @@ export async function GET(request: Request) {
       }
     })
 
-    return NextResponse.json(leads)
+    return NextResponse.json(leads, { headers: corsHeaders })
   } catch (error) {
     console.error('Error fetching leads:', error)
-    return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500, headers: corsHeaders })
   }
 }
 
@@ -54,9 +64,9 @@ export async function POST(request: Request) {
         }
       }
     })
-    return NextResponse.json(lead)
+    return NextResponse.json(lead, { headers: corsHeaders })
   } catch (error) {
     console.error('Error creating lead:', error)
-    return NextResponse.json({ error: 'Failed to create lead' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create lead' }, { status: 500, headers: corsHeaders })
   }
 }

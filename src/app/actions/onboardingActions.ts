@@ -46,6 +46,7 @@ export async function updateOnboardingAction(id: string, formData: FormData) {
     })
 
     revalidatePath('/onboarding')
+    revalidatePath('/')
     return { success: true }
   } catch (error) {
     console.error('Failed to update onboarding:', error)
@@ -63,6 +64,7 @@ export async function toggleOnboardingChecklistAction(id: string, field: string,
       }
     })
     revalidatePath('/onboarding')
+    revalidatePath('/')
     return { success: true }
   } catch (error) {
     console.error('Failed to toggle checklist:', error)
@@ -80,6 +82,7 @@ export async function createOnboardingAction(demoId: string) {
       }
     })
     revalidatePath('/onboarding')
+    revalidatePath('/')
     return { success: true }
   } catch (error) {
     console.error('Failed to create onboarding:', error)

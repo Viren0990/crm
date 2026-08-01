@@ -3,6 +3,9 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { DemoTable } from '@/components/demos/DemoTable'
 import { Button } from '@/components/ui/Button'
 import { CalendarPlus } from 'lucide-react'
+import { RefreshButton } from '@/components/ui/RefreshButton'
+
+export const dynamic = 'force-dynamic'
 
 export default async function DemosPage() {
   const demos = await getDemos()
@@ -13,10 +16,13 @@ export default async function DemosPage() {
         title="Demos" 
         description="Track upcoming demos and their outcomes."
         action={
-          <Button>
-            <CalendarPlus className="w-4 h-4 mr-2" />
-            Schedule Demo
-          </Button>
+          <div className="flex items-center gap-3">
+            <RefreshButton />
+            <Button>
+              <CalendarPlus className="w-4 h-4 mr-2" />
+              Schedule Demo
+            </Button>
+          </div>
         }
       />
       

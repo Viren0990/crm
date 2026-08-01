@@ -57,15 +57,9 @@ export function Sidebar() {
         })}
       </div>
 
-      <div className="mt-auto border-t border-gray-100 p-4">
-        <div className="flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-gray-50 cursor-pointer">
-          <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-600">
-            A
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-gray-900">Admin User</span>
-            <span className="text-xs text-gray-500">View profile</span>
-          </div>
+      <div className="mt-auto border-t border-gray-100 p-4 flex flex-col gap-2">
+        <div className="px-3 pt-2">
+          <span className="text-xs text-gray-400 font-medium">Made by - Virendra</span>
         </div>
       </div>
     </div>

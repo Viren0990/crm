@@ -66,9 +66,7 @@ export function FollowUpTable({ initialFollowUps }: { initialFollowUps: any[] })
         <table>
           <thead>
             <tr>
-              <th className="w-8">
-                <input type="checkbox" className="rounded border-gray-300" />
-              </th>
+              <th className="w-8 text-center text-gray-400 font-medium text-xs">#</th>
               <th>Lead Name</th>
               <th>Company</th>
               <th>Demo Date</th>
@@ -84,7 +82,7 @@ export function FollowUpTable({ initialFollowUps }: { initialFollowUps: any[] })
                   No pending follow ups found.
                 </td>
               </tr>
-            ) : sortedFollowUps.map(demo => {
+            ) : sortedFollowUps.map((demo, index) => {
               
               const isPastDue = demo.followUpDate && new Date(demo.followUpDate) < new Date()
 
@@ -97,8 +95,8 @@ export function FollowUpTable({ initialFollowUps }: { initialFollowUps: any[] })
                     setIsSlideOverOpen(true)
                   }}
                 >
-                  <td onClick={e => e.stopPropagation()}>
-                    <input type="checkbox" className="rounded border-gray-300" />
+                  <td className="text-center text-gray-400 text-xs font-medium" onClick={e => e.stopPropagation()}>
+                    {index + 1}
                   </td>
                   <td>
                     <div className="font-medium text-indigo-600 hover:underline">

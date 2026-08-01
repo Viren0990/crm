@@ -1,6 +1,9 @@
 import { getOnboardings } from '@/app/actions/onboardingActions'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { OnboardingTable } from '@/components/onboarding/OnboardingTable'
+import { RefreshButton } from '@/components/ui/RefreshButton'
+
+export const dynamic = 'force-dynamic'
 
 export default async function OnboardingPage() {
   const onboardings = await getOnboardings()
@@ -10,6 +13,11 @@ export default async function OnboardingPage() {
       <PageHeader 
         title="Onboarding" 
         description="Track clients transitioning from successful demos."
+        action={
+          <div className="flex items-center gap-3">
+            <RefreshButton />
+          </div>
+        }
       />
       
       <div className="flex-1 min-h-0 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col overflow-hidden">

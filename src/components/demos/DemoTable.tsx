@@ -87,9 +87,7 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
         <table>
           <thead>
             <tr>
-              <th className="w-8">
-                <input type="checkbox" className="rounded border-gray-300" />
-              </th>
+              <th className="w-8 text-center text-gray-400 font-medium text-xs">#</th>
               <th>Lead Name</th>
               <th>Company</th>
               <th>Type</th>
@@ -107,7 +105,7 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
                   No demos found for this filter.
                 </td>
               </tr>
-            ) : filteredDemos.map(demo => {
+            ) : filteredDemos.map((demo, index) => {
               const status = DEMO_STATUSES.find(s => s.value === demo.status)
               const type = LEAD_TYPES.find(t => t.value === demo.type)
               
@@ -122,8 +120,8 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
                     setIsSlideOverOpen(true)
                   }}
                 >
-                  <td onClick={e => e.stopPropagation()}>
-                    <input type="checkbox" className="rounded border-gray-300" />
+                  <td className="text-center text-gray-400 text-xs font-medium" onClick={e => e.stopPropagation()}>
+                    {index + 1}
                   </td>
                   <td>
                     <div className="font-medium text-indigo-600 hover:underline">

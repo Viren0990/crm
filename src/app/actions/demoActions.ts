@@ -73,6 +73,8 @@ export async function updateDemoAction(demoId: string, formData: FormData) {
 
     revalidatePath('/demos')
     revalidatePath('/followups')
+    revalidatePath('/leads')
+    revalidatePath('/')
     return { success: true }
   } catch (error) {
     console.error('Failed to update demo:', error)
@@ -115,6 +117,8 @@ export async function updateFollowUpAction(demoId: string, formData: FormData) {
     })
 
     revalidatePath('/followups')
+    revalidatePath('/leads')
+    revalidatePath('/')
     return { success: true }
   } catch (error) {
     console.error('Failed to update follow up:', error)

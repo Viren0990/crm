@@ -3,6 +3,9 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { LeadTable } from '@/components/leads/LeadTable'
 import { AddLeadButton } from '@/components/leads/AddLeadButton'
 import { ImportCsvButton } from '@/components/leads/ImportCsvButton'
+import { RefreshButton } from '@/components/ui/RefreshButton'
+
+export const dynamic = 'force-dynamic'
 
 export default async function LeadsPage() {
   const leads = await getLeads()
@@ -14,6 +17,7 @@ export default async function LeadsPage() {
         description="Manage your incoming leads and track initial contact."
         action={
           <div className="flex items-center gap-3">
+            <RefreshButton />
             <ImportCsvButton />
             <AddLeadButton />
           </div>
