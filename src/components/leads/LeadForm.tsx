@@ -142,6 +142,15 @@ export function LeadForm({
               id="demoTime" 
               name="demoTime" 
               required 
+              defaultValue={
+                initialData?.demo?.scheduledAt 
+                  ? (() => {
+                      const date = new Date(initialData.demo.scheduledAt);
+                      const pad = (n: number) => String(n).padStart(2, '0');
+                      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+                    })()
+                  : ''
+              }
               className="w-full rounded-lg border border-indigo-200 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" 
             />
           </div>

@@ -8,6 +8,7 @@ export async function getLeads() {
   return prisma.lead.findMany({
     orderBy: { updatedAt: 'desc' },
     include: {
+      demo: true,
       activities: {
         orderBy: { createdAt: 'desc' },
         take: 5
@@ -107,6 +108,16 @@ export async function updateLeadAction(leadId: string, formData: FormData) {
           }
         })
         revalidatePath('/leads')
+        revalidatePath('/demos')
+        revalidatePath('/')
+      } else if (demoTime) {
+        // Update the existing demo's scheduled time if it was changed
+        await prisma.demo.update({
+          where: { id: existingDemo.id },
+          data: {
+            scheduledAt: new Date(demoTime)
+          }
+        })
         revalidatePath('/demos')
         revalidatePath('/')
       }
