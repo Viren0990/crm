@@ -5,6 +5,8 @@ import { Users, Target, Rocket, CheckCircle2, TrendingUp, Calendar, Phone, Alert
 import { formatDateTime } from '@/lib/utils'
 import { RefreshButton } from '@/components/ui/RefreshButton'
 
+export const dynamic = 'force-dynamic'
+
 export default async function Dashboard() {
   const { stats, funnel, focus } = await getDashboardStats()
 
@@ -20,7 +22,7 @@ export default async function Dashboard() {
         description="Overview of your pipeline and recent activity" 
         action={
           <div className="flex items-center gap-3">
-            {/* <RefreshButton /> */}
+            <RefreshButton />
           </div>
         }
       />
