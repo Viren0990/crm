@@ -7,11 +7,6 @@ import { unstable_cache } from 'next/cache'
 // Get all demos
 export async function getDemos() {
   return prisma.demo.findMany({
-    where: {
-      status: {
-        not: 'COMPLETED'
-      }
-    },
     orderBy: { scheduledAt: 'asc' },
     include: {
       lead: true,
@@ -23,7 +18,8 @@ export async function getDemos() {
 export async function getFollowUps() {
   return prisma.demo.findMany({
     where: {
-      status: 'COMPLETED'
+      status: 'COMPLETED',
+      needsFollowUp: true
     },
     orderBy: { followUpDate: 'asc' },
     include: {
@@ -40,11 +36,20 @@ export async function updateDemoAction(demoId: string, formData: FormData) {
     const result = formData.get('result') as string
     const durationStr = formData.get('duration') as string
     const conductedBy = formData.get('conductedBy') as string
+    const needsFollowUp = formData.get('needsFollowUp') === 'true' || formData.get('needsFollowUp') === 'on'
+    const followUpDateStr = formData.get('followUpDate') as string
     
     const data: any = {
       status,
       notes,
       result,
+      needsFollowUp,
+    }
+
+    if (needsFollowUp && followUpDateStr) {
+      data.followUpDate = new Date(followUpDateStr)
+    } else if (!needsFollowUp) {
+      data.followUpDate = null
     }
 
     if (conductedBy) {

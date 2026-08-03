@@ -61,6 +61,7 @@ model Demo {
   notes         String?   @db.Text
 
   followUpDate  DateTime?
+  needsFollowUp Boolean   @default(false)
   followUpNotes String?   @db.Text
   followUpResult String?  @db.Text
 

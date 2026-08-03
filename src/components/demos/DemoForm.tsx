@@ -24,6 +24,9 @@ export function DemoForm({
     return !DEMO_STAFF.includes(initialData.conductedBy);
   });
 
+  const [currentStatus, setCurrentStatus] = useState(initialData?.status || 'PENDING');
+  const [needsFollowUp, setNeedsFollowUp] = useState(initialData?.needsFollowUp || false);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
@@ -60,12 +63,47 @@ export function DemoForm({
         
         <div>
           <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-          <select id="status" name="status" defaultValue={initialData.status} className="w-full rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white font-medium">
+          <select 
+            id="status" 
+            name="status" 
+            value={currentStatus} 
+            onChange={(e) => setCurrentStatus(e.target.value)}
+            className="w-full rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white font-medium"
+          >
             {DEMO_STATUSES.map(s => (
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>
         </div>
+
+        {currentStatus === 'COMPLETED' && (
+          <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 space-y-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input 
+                type="checkbox" 
+                name="needsFollowUp" 
+                checked={needsFollowUp}
+                onChange={(e) => setNeedsFollowUp(e.target.checked)}
+                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer" 
+              />
+              <span className="text-sm font-medium text-gray-900">This demo needs a Follow-up</span>
+            </label>
+
+            {needsFollowUp && (
+              <div>
+                <label htmlFor="followUpDate" className="block text-sm font-medium text-gray-700 mb-1">Follow-up Date</label>
+                <input 
+                  type="datetime-local" 
+                  id="followUpDate" 
+                  name="followUpDate" 
+                  defaultValue={initialData?.followUpDate ? new Date(initialData.followUpDate).toISOString().slice(0, 16) : ''} 
+                  required={needsFollowUp}
+                  className="w-full rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white" 
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         <div>
           <label htmlFor="conductedBy-select" className="block text-sm font-medium text-gray-700 mb-1">Conducted By</label>

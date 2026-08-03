@@ -70,7 +70,7 @@ export function FollowUpTable({ initialFollowUps }: { initialFollowUps: any[] })
               <th>Lead Name</th>
               <th>Company</th>
               <th>Demo Date</th>
-              <th>Next Follow-up</th>
+              <th>Follow-up Date</th>
               <th>Follow-up Notes</th>
               <th>Result / Outcome</th>
             </tr>

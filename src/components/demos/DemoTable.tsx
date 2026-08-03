@@ -18,7 +18,7 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
   }, [initialDemos])
 
   // Status Tabs
-  const tabs = ['All', 'PENDING', 'RESCHEDULED', 'NO_SHOW']
+  const tabs = ['All', 'PENDING', 'RESCHEDULED', 'NO_SHOW', 'COMPLETED']
   const [activeTab, setActiveTab] = useState('All')
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [searchQuery, setSearchQuery] = useState('')
@@ -140,7 +140,12 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
                   </td>
                   <td>{demo.conductedBy || '—'}</td>
                   <td>
-                    {status && <Badge color={status.color}>{status.label}</Badge>}
+                    <div className="flex flex-col gap-1 items-start">
+                      {status && <Badge color={status.color}>{status.label}</Badge>}
+                      {demo.status === 'COMPLETED' && demo.needsFollowUp && (
+                        <Badge color="amber" className="text-[10px] px-1.5 py-0">Needs Follow-up</Badge>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <div className="max-w-[200px] overflow-hidden">
