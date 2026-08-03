@@ -66,7 +66,7 @@ export const ACTIVITY_TYPES = {
 } as const
 
 // ── Staff Options ─────────────────────────────────
-export const LEAD_STAFF = ['Ritu', 'Pooja'] as const
+export const LEAD_STAFF = ['Ritu', 'Pooja', 'Anuja'] as const
 export const DEMO_STAFF = ['Jaspal', 'Raj'] as const
 
 // ── Onboarding Checklist Fields ───────────────────

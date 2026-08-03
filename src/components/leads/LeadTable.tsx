@@ -4,8 +4,8 @@ import { useState, useEffect, useTransition } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { SlideOver } from '@/components/ui/SlideOver'
 import { LeadForm } from '@/components/leads/LeadForm'
-import { LEAD_STATUSES, LEAD_TYPES, LEAD_PRIORITIES } from '@/lib/constants'
-import { formatDate, getStaleLevel } from '@/lib/utils'
+import { LEAD_STATUSES, LEAD_TYPES, LEAD_PRIORITIES, LEAD_STAFF } from '@/lib/constants'
+import { formatDate, getStaleLevel, getBadgeClasses, cn } from '@/lib/utils'
 import { AlertCircle, AlertTriangle, ArrowDownAZ, ArrowUpAZ, Search, Mail, MessageSquare, Download } from 'lucide-react'
 import { toggleLeadFieldAction } from '@/app/actions/leadActions'
 
@@ -24,10 +24,26 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
   const [activeTab, setActiveTab] = useState('All')
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [searchQuery, setSearchQuery] = useState('')
+  const [staffFilter, setStaffFilter] = useState('All')
+
+  // Compute unique staff members (defaults + any custom ones from the database)
+  const allStaffOptions = Array.from(new Set([
+    ...LEAD_STAFF,
+    ...leads.map(l => l.staff).filter(s => typeof s === 'string' && s.trim() !== '' && !(LEAD_STAFF as readonly string[]).includes(s))
+  ])).sort()
 
   const filteredLeads = leads.filter(lead => {
     // 1. Tab filter
     if (activeTab !== 'All' && lead.status !== activeTab) return false
+    
+    // 2. Staff filter
+    if (staffFilter !== 'All') {
+      if (staffFilter === 'Unassigned') {
+        if (lead.staff && lead.staff.trim() !== '') return false
+      } else {
+        if (lead.staff !== staffFilter) return false
+      }
+    }
     
     // 2. Search filter
     if (searchQuery.trim() !== '') {
@@ -109,19 +125,25 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
             className="pl-9 pr-4 py-1.5 rounded-full border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48 transition-all focus:w-64"
           />
         </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <select
+            value={staffFilter}
+            onChange={(e) => setStaffFilter(e.target.value)}
+            className="px-3 py-1.5 rounded-full border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-gray-700 cursor-pointer"
+          >
+            <option value="All">All Staff</option>
+            {allStaffOptions.map(staff => (
+              <option key={staff} value={staff}>{staff}</option>
+            ))}
+            <option value="Unassigned">Unassigned</option>
+          </select>
+        </div>
         <button
           onClick={() => setSortOrder(s => s === 'desc' ? 'asc' : 'desc')}
           className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors shrink-0"
         >
           {sortOrder === 'desc' ? <ArrowDownAZ className="w-4 h-4" /> : <ArrowUpAZ className="w-4 h-4" />}
           Sort
-        </button>
-        <button
-          onClick={handleExportCsv}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors shrink-0"
-        >
-          <Download className="w-4 h-4" />
-          Export
         </button>
       </div>
 
@@ -134,6 +156,7 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
               <th className="w-24">Date</th>
               <th>Name</th>
               <th>Contact</th>
+              <th>Assigned Staff</th>
               <th>Address / City</th>
               <th>Type / Source</th>
               <th>Status</th>
@@ -157,8 +180,13 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
 
               return (
                 <tr key={lead.id}>
-                  <td className="text-center text-gray-400 text-xs font-medium" onClick={e => e.stopPropagation()}>
-                    {index + 1}
+                  <td className="text-center" onClick={e => e.stopPropagation()}>
+                    <div className={cn(
+                      "inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold",
+                      priority ? getBadgeClasses(priority.color) : "bg-gray-100 text-gray-500"
+                    )}>
+                      {index + 1}
+                    </div>
                   </td>
                   <td className="text-sm text-gray-600 whitespace-nowrap">
                     {formatDate(lead.createdAt)}
@@ -189,6 +217,9 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
                         </a>
                       )}
                     </div>
+                  </td>
+                  <td>
+                    <span className="text-sm font-medium text-gray-700">{lead.staff || '—'}</span>
                   </td>
                   <td>
                     <span className="text-sm text-gray-700">{lead.city || '—'}</span>
@@ -231,6 +262,16 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
             })}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex justify-end px-4 py-2 border-t border-gray-100 bg-gray-50/50 mt-auto shrink-0">
+        <button
+          onClick={handleExportCsv}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-indigo-700 bg-white border border-indigo-100 hover:bg-indigo-50 transition-colors shadow-sm"
+        >
+          <Download className="w-3.5 h-3.5" />
+          Export Current View to CSV
+        </button>
       </div>
 
       <SlideOver 
