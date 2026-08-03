@@ -77,6 +77,21 @@ export function getBadgeClasses(color: string): string {
   return map[color] || map.gray
 }
 
+export function getSolidBadgeClasses(color: string): string {
+  const map: Record<string, string> = {
+    blue: 'bg-blue-600 text-white',
+    indigo: 'bg-indigo-600 text-white',
+    violet: 'bg-violet-600 text-white',
+    amber: 'bg-amber-500 text-white', // Amber looks better at 500
+    rose: 'bg-rose-600 text-white',
+    emerald: 'bg-emerald-600 text-white',
+    green: 'bg-green-600 text-white',
+    orange: 'bg-orange-500 text-white',
+    gray: 'bg-gray-500 text-white',
+  }
+  return map[color] || map.gray
+}
+
 // ── Onboarding progress calculator ────────────────
 export function calculateOnboardingProgress(onboarding: {
   registrationEmail: boolean

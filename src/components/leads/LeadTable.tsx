@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { SlideOver } from '@/components/ui/SlideOver'
 import { LeadForm } from '@/components/leads/LeadForm'
 import { LEAD_STATUSES, LEAD_TYPES, LEAD_PRIORITIES, LEAD_STAFF } from '@/lib/constants'
-import { formatDate, getStaleLevel, getBadgeClasses, cn } from '@/lib/utils'
+import { formatDate, getStaleLevel, getBadgeClasses, getSolidBadgeClasses, cn } from '@/lib/utils'
 import { AlertCircle, AlertTriangle, ArrowDownAZ, ArrowUpAZ, Search, Mail, MessageSquare, Download } from 'lucide-react'
 import { toggleLeadFieldAction } from '@/app/actions/leadActions'
 
@@ -162,7 +162,6 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
               <th>Status</th>
               <th className="text-center">WA / Called</th>
               <th>Notes</th>
-              <th>Stale</th>
             </tr>
           </thead>
           <tbody>
@@ -176,14 +175,13 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
               const priority = LEAD_PRIORITIES.find(p => p.value === lead.priority)
               const status = LEAD_STATUSES.find(s => s.value === lead.status)
               const type = LEAD_TYPES.find(t => t.value === lead.type)
-              const stale = getStaleLevel(lead.updatedAt)
 
               return (
                 <tr key={lead.id}>
                   <td className="text-center" onClick={e => e.stopPropagation()}>
                     <div className={cn(
                       "inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold",
-                      priority ? getBadgeClasses(priority.color) : "bg-gray-100 text-gray-500"
+                      priority ? getSolidBadgeClasses(priority.color) : "bg-gray-200 text-gray-500"
                     )}>
                       {index + 1}
                     </div>
@@ -251,11 +249,6 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
                   </td>
                   <td>
                     <span className="text-xs text-gray-600 line-clamp-2 max-w-[160px]">{lead.notes || '—'}</span>
-                  </td>
-                  <td>
-                    {stale === 'danger' && <span title="Stale: >10 days"><AlertCircle className="w-5 h-5 text-rose-500" /></span>}
-                    {stale === 'warning' && <span title="Stale: >5 days"><AlertTriangle className="w-5 h-5 text-amber-500" /></span>}
-                    {stale === 'none' && <span className="text-gray-300">—</span>}
                   </td>
                 </tr>
               )

@@ -146,7 +146,7 @@ export function DemoForm({
         
         <div>
           <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes (How it went)</label>
-          <textarea id="notes" name="notes" defaultValue={initialData?.notes} rows={4} className="w-full rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none"></textarea>
+          <textarea id="notes" name="notes" defaultValue={initialData?.notes} rows={7} className="w-full rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-y min-h-[120px]"></textarea>
         </div>
       </div>
 
