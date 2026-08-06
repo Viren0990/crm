@@ -259,37 +259,61 @@ export async function addActivityNoteAction(leadId: string, note: string) {
 export async function importLeadsAction(leadsData: any[]) {
   try {
     // Map CSV data to Prisma schema
-    const dataToInsert = leadsData.map(row => ({
-      name: row.name || 'Unknown Lead',
-      email: row.email || null,
-      phone: row.phone || null,
-      company: row.company || null,
-      city: row.city || null,
-      address: row.address || null,
-      type: row.type || 'N/A',
-      source: row.source || 'CSV Import',
-      staff: row.staff || null,
-      priority: row.priority || 'WARM',
-      notes: row.notes || null,
-      status: 'NEW',
-    }))
-
-    // Process in batches if list is huge, but assuming < 500 for now.
-    // Transaction ensures all or nothing, and lets us log activity for each
-    await prisma.$transaction(
-      dataToInsert.map(data => prisma.lead.create({
-        data: {
-          ...data,
-          activities: {
-            create: {
-              type: 'CREATED',
-              title: 'Lead imported via CSV',
-              performedBy: 'System'
-            }
+    const dataToInsert = leadsData.map(row => {
+      // Parse custom date if provided (e.g. "25/07/2026", "2026-07-25", "July 25, 2026")
+      let createdAt: Date | undefined = undefined
+      if (row.date) {
+        const parsed = new Date(row.date)
+        if (!isNaN(parsed.getTime())) {
+          createdAt = parsed
+        } else {
+          // Try DD/MM/YYYY format (common in India)
+          const parts = String(row.date).split(/[\/\-.]/)
+          if (parts.length === 3) {
+            const [day, month, year] = parts.map(Number)
+            const d = new Date(year, month - 1, day)
+            if (!isNaN(d.getTime())) createdAt = d
           }
         }
-      }))
-    )
+      }
+
+      return {
+        name: row.name || 'Unknown Lead',
+        email: row.email || null,
+        phone: row.phone || null,
+        company: row.company || null,
+        city: row.city || null,
+        address: row.address || null,
+        type: row.type || 'N/A',
+        source: row.source || 'CSV Import',
+        staff: row.staff || null,
+        priority: row.priority || 'WARM',
+        notes: row.notes || null,
+        status: 'CONTACTED',  // Hardcoded: Needs Call Back
+        ...(createdAt ? { createdAt, updatedAt: createdAt } : {}),
+      }
+    })
+
+    // Process in batches of 10 to avoid transaction timeout
+    const BATCH_SIZE = 10
+    for (let i = 0; i < dataToInsert.length; i += BATCH_SIZE) {
+      const batch = dataToInsert.slice(i, i + BATCH_SIZE)
+      await prisma.$transaction(
+        batch.map(data => prisma.lead.create({
+          data: {
+            ...data,
+            activities: {
+              create: {
+                type: 'CREATED',
+                title: 'Lead imported via CSV',
+                performedBy: 'System',
+                ...(data.createdAt ? { createdAt: data.createdAt } : {}),
+              }
+            }
+          }
+        }))
+      )
+    }
 
     revalidatePath('/leads')
     revalidatePath('/') // Dashboard

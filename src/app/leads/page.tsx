@@ -18,7 +18,7 @@ export default async function LeadsPage() {
         action={
           <div className="flex items-center gap-3">
             {/* <RefreshButton /> */}
-            {/* <ImportCsvButton /> */}
+            <ImportCsvButton />
             <AddLeadButton />
           </div>
         }

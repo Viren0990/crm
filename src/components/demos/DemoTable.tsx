@@ -92,6 +92,7 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
               <th>Company</th>
               <th>Type</th>
               <th>Scheduled Time</th>
+              <th>Assigned Staff</th>
               <th>Conducted By</th>
               <th>Status</th>
               <th>Notes / Result</th>
@@ -137,6 +138,13 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
                       {formatDateTime(demo.scheduledAt)}
                     </div>
                     {demo.duration && <div className="text-xs text-gray-500">{demo.duration} min</div>}
+                  </td>
+                  <td>
+                    {demo.lead?.staff ? (
+                      <span className="font-medium text-gray-900">{demo.lead.staff}</span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
                   </td>
                   <td>{demo.conductedBy || '—'}</td>
                   <td>

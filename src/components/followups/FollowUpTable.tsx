@@ -68,6 +68,7 @@ export function FollowUpTable({ initialFollowUps }: { initialFollowUps: any[] })
             <tr>
               <th className="w-8 text-center text-gray-400 font-medium text-xs">#</th>
               <th>Lead Name</th>
+              <th>Assigned Staff</th>
               <th>Company</th>
               <th>Demo Date</th>
               <th>Follow-up Date</th>
@@ -110,6 +111,13 @@ export function FollowUpTable({ initialFollowUps }: { initialFollowUps: any[] })
                         </a>
                       )}
                     </div>
+                  </td>
+                  <td>
+                    {demo.lead?.staff ? (
+                      <span className="font-medium text-gray-900">{demo.lead.staff}</span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
                   </td>
                   <td>{demo.lead?.company || '—'}</td>
                   <td>

@@ -2,8 +2,26 @@
 
 import { useState, useRef, useTransition } from 'react'
 import Papa from 'papaparse'
+import * as XLSX from 'xlsx'
 import { UploadCloud, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
 import { importLeadsAction } from '@/app/actions/leadActions'
+
+function mapRowsToLeads(rows: any[]) {
+  return rows.map((row: any) => ({
+    name: row.name || row['full name'] || row['first name'] || 'Unknown Lead',
+    email: row.email || row['email address'] || '',
+    phone: row.phone || row['phone number'] || row.mobile || '',
+    company: row.company || row.organization || '',
+    city: row.city || row.location || '',
+    address: row.address || '',
+    type: row.type || 'B2C',
+    source: row.source || 'CSV Import',
+    staff: row.staff || row.assigned || '',
+    priority: row.priority || 'WARM',
+    notes: row.notes || row.comments || '',
+    date: row.date || row['created date'] || row['created at'] || '',
+  }))
+}
 
 export function CsvImporter({ onSuccess }: { onSuccess: () => void }) {
   const [file, setFile] = useState<File | null>(null)
@@ -15,43 +33,58 @@ export function CsvImporter({ onSuccess }: { onSuccess: () => void }) {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (!selectedFile) return
-    
-    if (selectedFile.type !== 'text/csv' && !selectedFile.name.endsWith('.csv')) {
-      setError('Please upload a valid CSV file.')
+
+    const isCSV = selectedFile.type === 'text/csv' || selectedFile.name.endsWith('.csv')
+    const isExcel = selectedFile.name.endsWith('.xlsx') || selectedFile.name.endsWith('.xls') || selectedFile.type.includes('spreadsheet')
+
+    if (!isCSV && !isExcel) {
+      setError('Please upload a .csv or .xlsx file.')
       return
     }
 
     setFile(selectedFile)
     setError(null)
 
-    Papa.parse(selectedFile, {
-      header: true,
-      skipEmptyLines: true,
-      transformHeader: (header) => header.trim().toLowerCase(),
-      complete: (results) => {
-        if (results.errors.length > 0) {
-          setError('Error parsing CSV. Please check the format.')
-          return
+    if (isCSV) {
+      // Parse CSV with PapaParse
+      Papa.parse(selectedFile, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: (header) => header.trim().toLowerCase(),
+        complete: (results) => {
+          if (results.errors.length > 0) {
+            setError('Error parsing CSV. Please check the format.')
+            return
+          }
+          setParsedData(mapRowsToLeads(results.data))
         }
+      })
+    } else {
+      // Parse XLSX with SheetJS
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        try {
+          const data = new Uint8Array(event.target?.result as ArrayBuffer)
+          const workbook = XLSX.read(data, { type: 'array' })
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: '' })
 
-        // Map data to our schema, picking up common column name variations
-        const mappedData = results.data.map((row: any) => ({
-          name: row.name || row['full name'] || row['first name'] || 'Unknown Lead',
-          email: row.email || row['email address'] || '',
-          phone: row.phone || row['phone number'] || row.mobile || '',
-          company: row.company || row.organization || '',
-          city: row.city || row.location || '',
-          address: row.address || '',
-          type: row.type || 'B2C',
-          source: row.source || 'CSV Import',
-          staff: row.staff || row.assigned || '',
-          priority: row.priority || 'WARM',
-          notes: row.notes || row.comments || '',
-        }))
+          // Normalize headers to lowercase
+          const normalizedData = jsonData.map((row: any) => {
+            const newRow: any = {}
+            for (const key of Object.keys(row)) {
+              newRow[key.trim().toLowerCase()] = row[key]
+            }
+            return newRow
+          })
 
-        setParsedData(mappedData)
+          setParsedData(mapRowsToLeads(normalizedData))
+        } catch {
+          setError('Error reading Excel file. Please check the format.')
+        }
       }
-    })
+      reader.readAsArrayBuffer(selectedFile)
+    }
   }
 
   const handleImport = () => {
@@ -76,7 +109,7 @@ export function CsvImporter({ onSuccess }: { onSuccess: () => void }) {
         >
           <input 
             type="file" 
-            accept=".csv" 
+            accept=".csv,.xlsx,.xls" 
             className="hidden" 
             ref={fileInputRef} 
             onChange={handleFileUpload} 
@@ -84,9 +117,9 @@ export function CsvImporter({ onSuccess }: { onSuccess: () => void }) {
           <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-4">
             <UploadCloud className="w-8 h-8" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Upload CSV File</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">Upload CSV or Excel File</h3>
           <p className="text-sm text-gray-500 max-w-sm mb-6">
-            Drag and drop your spreadsheet here or click to browse. We'll automatically match columns like Name, Email, and Phone.
+            Drag and drop your spreadsheet here or click to browse. We accept both <strong>.csv</strong> and <strong>.xlsx</strong> files and will automatically match columns like Name, Email, and Phone.
           </p>
           <button className="px-6 py-2.5 bg-white border border-gray-200 shadow-sm rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
             Browse Files
