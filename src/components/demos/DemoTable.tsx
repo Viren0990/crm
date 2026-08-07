@@ -20,7 +20,8 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
   // Status Tabs
   const tabs = ['All', 'PENDING', 'RESCHEDULED', 'NO_SHOW', 'COMPLETED']
   const [activeTab, setActiveTab] = useState('All')
-  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
+  const [sortBy, setSortBy] = useState<'createdAt' | 'demoDate'>('demoDate')
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('asc')
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredDemos = demos.filter(item => {
@@ -39,9 +40,15 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
     
     return true
   }).sort((a, b) => {
-    const timeA = new Date(a.createdAt).getTime()
-    const timeB = new Date(b.createdAt).getTime()
-    return sortOrder === 'desc' ? timeB - timeA : timeA - timeB
+    if (sortBy === 'demoDate') {
+      const timeA = new Date(a.scheduledAt).getTime()
+      const timeB = new Date(b.scheduledAt).getTime()
+      return sortOrder === 'desc' ? timeB - timeA : timeA - timeB
+    } else {
+      const timeA = new Date(a.createdAt).getTime()
+      const timeB = new Date(b.createdAt).getTime()
+      return sortOrder === 'desc' ? timeB - timeA : timeA - timeB
+    }
   })
 
   return (
@@ -73,13 +80,23 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
             className="pl-9 pr-4 py-1.5 rounded-full border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48 transition-all focus:w-64"
           />
         </div>
-        <button
-          onClick={() => setSortOrder(s => s === 'desc' ? 'asc' : 'desc')}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors shrink-0"
-        >
-          {sortOrder === 'desc' ? <ArrowDownAZ className="w-4 h-4" /> : <ArrowUpAZ className="w-4 h-4" />}
-          Sort
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <select 
+            value={sortBy} 
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="px-3 py-1.5 rounded-full border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium text-gray-700 cursor-pointer"
+          >
+            <option value="demoDate">Demo Date</option>
+            <option value="createdAt">Created Date</option>
+          </select>
+          <button
+            onClick={() => setSortOrder(s => s === 'desc' ? 'asc' : 'desc')}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors shrink-0"
+          >
+            {sortOrder === 'desc' ? <ArrowDownAZ className="w-4 h-4" /> : <ArrowUpAZ className="w-4 h-4" />}
+            Sort
+          </button>
+        </div>
       </div>
 
       {/* Table Container */}
@@ -88,7 +105,7 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
           <thead>
             <tr>
               <th className="w-8 text-center text-gray-400 font-medium text-xs">#</th>
-              <th>Lead Name</th>
+              <th>Lead (Name / Phone)</th>
               <th>Company</th>
               <th>Type</th>
               <th>Scheduled Time</th>
@@ -110,7 +127,9 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
               const status = DEMO_STATUSES.find(s => s.value === demo.status)
               const type = LEAD_TYPES.find(t => t.value === demo.type)
               
-              const isPastDue = demo.status === 'PENDING' && new Date(demo.scheduledAt) < new Date()
+              const today = new Date()
+              today.setHours(0, 0, 0, 0)
+              const isPastDue = demo.status === 'PENDING' && new Date(demo.scheduledAt) < today
 
               return (
                 <tr 
@@ -128,6 +147,7 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
                     <div className="font-medium text-indigo-600 hover:underline">
                       {demo.lead?.name || '—'}
                     </div>
+                    {demo.lead?.phone && <div className="text-xs text-gray-500 mt-0.5">{demo.lead.phone}</div>}
                   </td>
                   <td>{demo.lead?.company || '—'}</td>
                   <td>

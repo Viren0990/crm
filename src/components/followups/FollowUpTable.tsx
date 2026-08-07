@@ -85,7 +85,9 @@ export function FollowUpTable({ initialFollowUps }: { initialFollowUps: any[] })
               </tr>
             ) : sortedFollowUps.map((demo, index) => {
               
-              const isPastDue = demo.followUpDate && new Date(demo.followUpDate) < new Date()
+              const today = new Date()
+              today.setHours(0, 0, 0, 0)
+              const isPastDue = demo.followUpDate && new Date(demo.followUpDate) < today
 
               return (
                 <tr 
