@@ -20,8 +20,8 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
   // Status Tabs
   const tabs = ['All', 'PENDING', 'RESCHEDULED', 'NO_SHOW', 'COMPLETED']
   const [activeTab, setActiveTab] = useState('All')
-  const [sortBy, setSortBy] = useState<'createdAt' | 'demoDate'>('demoDate')
-  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('asc')
+  const [sortBy, setSortBy] = useState<'createdAt' | 'demoDate'>('createdAt')
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredDemos = demos.filter(item => {
