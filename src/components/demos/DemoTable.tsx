@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { SlideOver } from '@/components/ui/SlideOver'
 import { DemoForm } from '@/components/demos/DemoForm'
 import { DEMO_STATUSES, LEAD_TYPES } from '@/lib/constants'
-import { formatDateTime, getBadgeClasses, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 import { ArrowDownAZ, ArrowUpAZ, Search } from 'lucide-react'
 
 export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
@@ -135,7 +135,7 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
                   </td>
                   <td>
                     <div className={`font-medium ${isPastDue ? 'text-rose-600' : 'text-gray-900'}`}>
-                      {formatDateTime(demo.scheduledAt)}
+                      {formatDate(demo.scheduledAt)} {demo.scheduledTime ? `at ${demo.scheduledTime}` : ''}
                     </div>
                     {demo.duration && <div className="text-xs text-gray-500">{demo.duration} min</div>}
                   </td>

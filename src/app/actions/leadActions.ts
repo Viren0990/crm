@@ -38,7 +38,10 @@ export async function createLeadAction(formData: FormData) {
       status: (formData.get('status') as string) || 'NEW',
     }
 
-    const demoTime = formData.get('demoTime') as string
+    const demoDate = formData.get('demoDate') as string
+    const demoTimeValue = formData.get('demoTimeValue') as string
+    const demoTimeAmPm = formData.get('demoTimeAmPm') as string
+    const demoTime = demoTimeValue ? `${demoTimeValue} ${demoTimeAmPm}` : ''
 
     const lead = await prisma.lead.create({
       data: {
@@ -59,7 +62,8 @@ export async function createLeadAction(formData: FormData) {
         data: {
           leadId: lead.id,
           type: data.type || 'Both',
-          scheduledAt: new Date(demoTime),
+          scheduledAt: new Date(demoDate),
+          scheduledTime: demoTime,
           conductedBy: data.staff || 'TBD',
         }
       })
@@ -92,7 +96,10 @@ export async function updateLeadAction(leadId: string, formData: FormData) {
       status: formData.get('status') as string,
     }
 
-    const demoTime = formData.get('demoTime') as string
+    const demoDate = formData.get('demoDate') as string
+    const demoTimeValue = formData.get('demoTimeValue') as string
+    const demoTimeAmPm = formData.get('demoTimeAmPm') as string
+    const demoTime = demoTimeValue ? `${demoTimeValue} ${demoTimeAmPm}` : ''
 
     const updatedLead = await prisma.lead.update({
       where: { id: leadId },
@@ -107,20 +114,23 @@ export async function updateLeadAction(leadId: string, formData: FormData) {
           data: {
             leadId,
             type: data.type || 'Both',
-            scheduledAt: demoTime ? new Date(demoTime) : new Date(Date.now() + 24 * 60 * 60 * 1000),
+            scheduledAt: demoDate ? new Date(demoDate) : new Date(Date.now() + 24 * 60 * 60 * 1000),
+            scheduledTime: demoTime || '12:00',
             conductedBy: data.staff || 'TBD',
           }
         })
         revalidatePath('/leads')
         revalidatePath('/demos')
         revalidatePath('/')
-      } else if (demoTime) {
+      } else if (demoTime || demoDate) {
         // Update the existing demo's scheduled time if it was changed
+        const updateData: any = {}
+        if (demoDate) updateData.scheduledAt = new Date(demoDate)
+        if (demoTime) updateData.scheduledTime = demoTime
+
         await prisma.demo.update({
           where: { id: existingDemo.id },
-          data: {
-            scheduledAt: new Date(demoTime)
-          }
+          data: updateData
         })
         revalidatePath('/demos')
         revalidatePath('/')

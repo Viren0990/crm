@@ -2,7 +2,8 @@
 
 import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
-import { LEAD_TYPES, LEAD_PRIORITIES, LEAD_SOURCES, LEAD_STAFF, LEAD_STATUSES } from '@/lib/constants'
+import { LEAD_TYPES, LEAD_PRIORITIES, LEAD_SOURCES, LEAD_STAFF, LEAD_STATUSES, DEMO_STATUSES } from '@/lib/constants'
+import { formatForDateTimeLocal } from '@/lib/utils'
 import { createLeadAction, updateLeadAction, deleteLeadAction } from '@/app/actions/leadActions'
 import { ActivityTimeline } from '@/components/leads/ActivityTimeline'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
@@ -158,23 +159,33 @@ export function LeadForm({
 
         {status === 'DEMO_SCHEDULED' && (
           <div className="animate-fade-in p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-            <label htmlFor="demoTime" className="block text-sm font-medium text-indigo-900 mb-1">Demo Date & Time *</label>
-            <input 
-              type="datetime-local" 
-              id="demoTime" 
-              name="demoTime" 
-              required 
-              defaultValue={
-                initialData?.demo?.scheduledAt 
-                  ? (() => {
-                      const date = new Date(initialData.demo.scheduledAt);
-                      const pad = (n: number) => String(n).padStart(2, '0');
-                      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-                    })()
-                  : ''
-              }
-              className="w-full rounded-lg border border-indigo-200 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" 
-            />
+            <label className="block text-sm font-medium text-indigo-900 mb-1">Demo Date & Time *</label>
+            <div className="flex gap-2">
+              <input 
+                type="date" 
+                id="demoDate" 
+                name="demoDate" 
+                required 
+                defaultValue={initialData?.demo?.scheduledAt ? new Date(initialData.demo.scheduledAt).toISOString().slice(0, 10) : ''}
+                className="w-full rounded-lg border border-indigo-200 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" 
+              />
+              <input 
+                type="text" 
+                name="demoTimeValue" 
+                placeholder="12:30"
+                required 
+                defaultValue={initialData?.demo?.scheduledTime?.split(' ')[0] || ''}
+                className="w-24 rounded-lg border border-indigo-200 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" 
+              />
+              <select 
+                name="demoTimeAmPm"
+                defaultValue={initialData?.demo?.scheduledTime?.split(' ')[1] || 'PM'}
+                className="rounded-lg border border-indigo-200 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
           </div>
         )}
 

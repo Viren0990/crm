@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { DEMO_STATUSES, DEMO_STAFF } from '@/lib/constants'
 import { updateDemoAction } from '@/app/actions/demoActions'
+import { formatForDateTimeLocal } from '@/lib/utils'
 
 export function DemoForm({ 
   initialData,
@@ -91,15 +92,33 @@ export function DemoForm({
 
             {needsFollowUp && (
               <div>
-                <label htmlFor="followUpDate" className="block text-sm font-medium text-gray-700 mb-1">Follow-up Date</label>
-                <input 
-                  type="datetime-local" 
-                  id="followUpDate" 
-                  name="followUpDate" 
-                  defaultValue={initialData?.followUpDate ? new Date(initialData.followUpDate).toISOString().slice(0, 16) : ''} 
-                  required={needsFollowUp}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white" 
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Follow-up Date & Time</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="date" 
+                    id="followUpDate" 
+                    name="followUpDate" 
+                    defaultValue={initialData?.followUpDate ? new Date(initialData.followUpDate).toISOString().slice(0, 10) : ''}
+                    required={needsFollowUp}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white" 
+                  />
+                  <input 
+                    type="text" 
+                    name="followUpTimeValue" 
+                    placeholder="12:30"
+                    defaultValue={initialData?.followUpTime?.split(' ')[0] || ''}
+                    required={needsFollowUp}
+                    className="w-24 rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white" 
+                  />
+                  <select 
+                    name="followUpTimeAmPm"
+                    defaultValue={initialData?.followUpTime?.split(' ')[1] || 'PM'}
+                    className="rounded-xl border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white"
+                  >
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
               </div>
             )}
           </div>

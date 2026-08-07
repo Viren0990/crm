@@ -31,6 +31,7 @@ model Lead {
   status        String    @default("NEW")       // "NEW" | "CONTACTED" | "QUALIFIED" | "DEMO_SCHEDULED" | "LOST"
 
   followUpDate  DateTime?
+  followUpTime  String?
 
   // Relationships
   demo          Demo?
@@ -52,6 +53,7 @@ model Demo {
   lead          Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   scheduledAt   DateTime
+  scheduledTime String?
   conductedBy   String
   type          String                          // "B2B" | "B2C" | "Both"
   duration      Int?                            // Minutes
@@ -61,6 +63,7 @@ model Demo {
   notes         String?   @db.Text
 
   followUpDate  DateTime?
+  followUpTime  String?
   needsFollowUp Boolean   @default(false)
   followUpNotes String?   @db.Text
   followUpResult String?  @db.Text

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { SlideOver } from '@/components/ui/SlideOver'
 import { FollowUpForm } from '@/components/followups/FollowUpForm'
-import { formatDateTime, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 import { ArrowDownAZ, ArrowUpAZ, Search, MessageSquare, Mail } from 'lucide-react'
 
 export function FollowUpTable({ initialFollowUps }: { initialFollowUps: any[] }) {
@@ -122,12 +122,12 @@ export function FollowUpTable({ initialFollowUps }: { initialFollowUps: any[] })
                   <td>{demo.lead?.company || '—'}</td>
                   <td>
                     <div className="text-sm text-gray-500">
-                      {formatDate(demo.scheduledAt)}
+                      {formatDate(demo.scheduledAt)} {demo.scheduledTime ? `at ${demo.scheduledTime}` : ''}
                     </div>
                   </td>
                   <td>
                     <div className={`font-medium ${isPastDue ? 'text-amber-600' : 'text-gray-900'}`}>
-                      {demo.followUpDate ? formatDateTime(demo.followUpDate) : 'Not set'}
+                      {demo.followUpDate ? `${formatDate(demo.followUpDate)} ${demo.followUpTime ? `at ${demo.followUpTime}` : ''}` : 'Not set'}
                     </div>
                   </td>
                   <td>

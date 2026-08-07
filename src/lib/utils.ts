@@ -47,6 +47,29 @@ export function formatRelativeTime(date: Date | string | null | undefined): stri
   return formatDate(date)
 }
 
+export function formatForDateTimeLocal(date: Date | string | null | undefined): string {
+  if (!date) return ''
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return ''
+  
+  // Format for Asia/Kolkata manually
+  const formatter = new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })
+  
+  // parts will have { day, month, year, hour, minute }
+  const parts = formatter.formatToParts(d)
+  const getPart = (type: string) => parts.find(p => p.type === type)?.value || '00'
+  
+  return `${getPart('year')}-${getPart('month')}-${getPart('day')}T${getPart('hour')}:${getPart('minute')}`
+}
+
 // ── Stale detection ───────────────────────────────
 export function getDaysSinceUpdate(date: Date | string): number {
   const d = new Date(date)

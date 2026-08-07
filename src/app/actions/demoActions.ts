@@ -38,6 +38,9 @@ export async function updateDemoAction(demoId: string, formData: FormData) {
     const conductedBy = formData.get('conductedBy') as string
     const needsFollowUp = formData.get('needsFollowUp') === 'true' || formData.get('needsFollowUp') === 'on'
     const followUpDateStr = formData.get('followUpDate') as string
+    const followUpTimeValue = formData.get('followUpTimeValue') as string
+    const followUpTimeAmPm = formData.get('followUpTimeAmPm') as string
+    const followUpTimeStr = followUpTimeValue ? `${followUpTimeValue} ${followUpTimeAmPm}` : ''
     
     const data: any = {
       status,
@@ -48,8 +51,10 @@ export async function updateDemoAction(demoId: string, formData: FormData) {
 
     if (needsFollowUp && followUpDateStr) {
       data.followUpDate = new Date(followUpDateStr)
+      data.followUpTime = followUpTimeStr
     } else if (!needsFollowUp) {
       data.followUpDate = null
+      data.followUpTime = null
     }
 
     if (conductedBy) {
@@ -92,6 +97,9 @@ export async function updateFollowUpAction(demoId: string, formData: FormData) {
   try {
     const followUpResult = formData.get('followUpResult') as string
     const followUpDateStr = formData.get('followUpDate') as string
+    const followUpTimeValue = formData.get('followUpTimeValue') as string
+    const followUpTimeAmPm = formData.get('followUpTimeAmPm') as string
+    const followUpTimeStr = followUpTimeValue ? `${followUpTimeValue} ${followUpTimeAmPm}` : ''
     const followUpNotes = formData.get('followUpNotes') as string
     
     const data: any = {
@@ -101,8 +109,10 @@ export async function updateFollowUpAction(demoId: string, formData: FormData) {
 
     if (followUpDateStr) {
       data.followUpDate = new Date(followUpDateStr)
+      data.followUpTime = followUpTimeStr
     } else {
       data.followUpDate = null
+      data.followUpTime = null
     }
 
     const demo = await prisma.demo.update({
