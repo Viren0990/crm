@@ -30,7 +30,7 @@ export function OnboardingTable({ initialOnboardings }: { initialOnboardings: an
     
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase()
-      const lead = item.demo?.lead
+      const lead = item.lead || item.demo?.lead
       if (!lead) return false
       
       const matchName = lead.name?.toLowerCase().includes(q)
@@ -127,7 +127,7 @@ export function OnboardingTable({ initialOnboardings }: { initialOnboardings: an
               </tr>
             ) : filteredOnboardings.map(item => {
               const status = ONBOARDING_STATUSES.find(s => s.value === item.status)
-              const lead = item.demo?.lead
+              const lead = item.lead || item.demo?.lead
               
               const progress = calculateOnboardingProgress(item)
 

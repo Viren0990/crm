@@ -9,6 +9,9 @@ export async function getLeads() {
     orderBy: { updatedAt: 'desc' },
     include: {
       demo: true,
+      followUps: {
+        orderBy: { attemptNumber: 'asc' }
+      }
     }
   })
 }

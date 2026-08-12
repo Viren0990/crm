@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/Button'
 import { LEAD_TYPES, LEAD_PRIORITIES, LEAD_SOURCES, LEAD_STAFF, LEAD_STATUSES, DEMO_STATUSES } from '@/lib/constants'
 import { formatForDateTimeLocal } from '@/lib/utils'
 import { createLeadAction, updateLeadAction, deleteLeadAction } from '@/app/actions/leadActions'
+import { markDetailsSentAction } from '@/app/actions/followUpActions'
 import { ActivityTimeline } from '@/components/leads/ActivityTimeline'
+import { FollowUpsList } from '@/components/leads/FollowUpsList'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 export function LeadForm({ 
@@ -19,7 +21,9 @@ export function LeadForm({
 }) {
   const formRef = useRef<HTMLFormElement>(null)
   const [isPending, setIsPending] = useState(false)
+  const [isTogglePending, setIsTogglePending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [status, setStatus] = useState(initialData?.status || 'NEW')
   const [activeTab, setActiveTab] = useState<'details' | 'activity'>('details')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -81,21 +85,54 @@ export function LeadForm({
   return (
     <div className="flex flex-col h-full">
       {initialData && (
-        <div className="flex items-center gap-6 mb-6 border-b border-gray-100">
-          <button 
-            type="button" 
-            onClick={() => setActiveTab('details')}
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'details' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-          >
-            Lead Details
-          </button>
-          <button 
-            type="button" 
-            onClick={() => setActiveTab('activity')}
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'activity' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-          >
-            Activity History
-          </button>
+        <div className="flex items-center justify-between mb-6 border-b border-gray-100 pb-3">
+          <div className="flex items-center gap-6">
+            <button 
+              type="button" 
+              onClick={() => setActiveTab('details')}
+              className={`text-sm font-medium transition-colors ${activeTab === 'details' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Lead Details
+            </button>
+
+            <button 
+              type="button" 
+              onClick={() => setActiveTab('activity')}
+              className={`text-sm font-medium transition-colors ${activeTab === 'activity' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Activity History
+            </button>
+          </div>
+          
+          {initialData && (
+            <div className="flex items-center gap-2 pr-2">
+              <span className="text-sm font-medium text-gray-700">Details Sent</span>
+              <button 
+                type="button" 
+                disabled={isTogglePending}
+                onClick={async () => {
+                  setIsTogglePending(true);
+                  try {
+                    if (status === 'DETAILS_SENT') {
+                    const fd = new FormData();
+                    fd.append('status', 'NEW');
+                    await updateLeadAction(initialData.id, fd);
+                    setStatus('NEW');
+                  } else {
+                    await markDetailsSentAction(initialData.id);
+                    setStatus('DETAILS_SENT');
+                    setShowSuccessModal(true);
+                  }
+                  } catch (e) {
+                    console.error("Toggle failed", e);
+                  } finally {
+                    setIsTogglePending(false);
+                  }
+                }}
+                className={`toggle-switch ${status === 'DETAILS_SENT' ? 'active' : ''} ${isTogglePending ? 'opacity-50 cursor-not-allowed' : ''}`} 
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -106,6 +143,7 @@ export function LeadForm({
               {error}
             </div>
           )}
+
 
       {/* Contact Info */}
       <div className="space-y-4">
@@ -259,23 +297,33 @@ export function LeadForm({
         </div>
       </div>
     </form>
+
       ) : (
         <div className="flex-1 -mx-6 -mb-6 min-h-[400px]">
           <ActivityTimeline leadId={initialData.id} activities={initialData.activities} />
         </div>
       )}
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleDelete}
         title="Delete Lead"
-        description="Are you sure you want to delete this lead? This action cannot be undone and will permanently remove all associated activity history and demos."
-        confirmText="Delete permanently"
+        description="Are you sure you want to delete this lead? This action cannot be undone."
+        confirmText="Delete"
         isDestructive={true}
         isPending={isPending}
+      />
+
+      <ConfirmModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        onConfirm={() => setShowSuccessModal(false)}
+        title="✅ Details Sent!"
+        description="This lead has been successfully marked as 'Details Sent' and automatically added to your Follow-Ups dashboard."
+        confirmText="OK"
+        hideCancel={true}
       />
     </div>
   )
 }
-

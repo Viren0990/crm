@@ -7,10 +7,9 @@ export async function getOnboardings() {
   return prisma.onboarding.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
+      lead: true,
       demo: {
-        include: {
-          lead: true
-        }
+        include: { lead: true }
       }
     }
   })
@@ -73,11 +72,11 @@ export async function toggleOnboardingChecklistAction(id: string, field: string,
 }
 
 // Create onboarding from follow up
-export async function createOnboardingAction(demoId: string) {
+export async function createOnboardingAction(leadId: string) {
   try {
     await prisma.onboarding.create({
       data: {
-        demoId,
+        leadId,
         status: 'PENDING'
       }
     })

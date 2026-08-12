@@ -30,11 +30,12 @@ model Lead {
   // Status within Leads stage
   status        String    @default("NEW")       // "NEW" | "CONTACTED" | "QUALIFIED" | "DEMO_SCHEDULED" | "LOST"
 
-  followUpDate  DateTime?
-  followUpTime  String?
+
 
   // Relationships
   demo          Demo?
+  followUps     FollowUp[]
+  onboarding    Onboarding?
   activities    Activity[]
 
   createdAt     DateTime  @default(now())
@@ -44,6 +45,28 @@ model Lead {
   @@index([type])
   @@index([staff])
   @@index([priority])
+}
+
+// ── Follow Up ──────────────────────────────────────
+model FollowUp {
+  id            String    @id @default(cuid())
+  leadId        String
+  lead          Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  
+  attemptNumber Int       // 1, 2, 3...
+  scheduledDate DateTime
+  scheduledTime String?
+  
+  status        String    @default("PENDING") // PENDING, COMPLETED, NO_ANSWER
+  notes         String?   @db.Text
+  result        String?   @db.Text
+  conductedBy   String?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([status])
+  @@index([scheduledDate])
 }
 
 // ── Demo ──────────────────────────────────────────
@@ -80,8 +103,11 @@ model Demo {
 // ── Onboarding ────────────────────────────────────
 model Onboarding {
   id                    String    @id @default(cuid())
-  demoId                String    @unique
-  demo                  Demo      @relation(fields: [demoId], references: [id], onDelete: Cascade)
+  demoId                String?   @unique
+  demo                  Demo?     @relation(fields: [demoId], references: [id], onDelete: SetNull)
+  
+  leadId                String?   @unique
+  lead                  Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   status                String    @default("PENDING")   // "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD"
   assignedTo            String?

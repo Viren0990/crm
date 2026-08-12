@@ -21,7 +21,7 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
 
   // Status Tabs
   const tabs = ['All', 'NEW', 'CONTACTED', 'QUALIFIED', 'DEMO_SCHEDULED', 'LOST']
-  const [activeTab, setActiveTab] = useState('All')
+  const [activeTab, setActiveTab] = useState('NEW')
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [searchQuery, setSearchQuery] = useState('')
   const [staffFilter, setStaffFilter] = useState('All')
@@ -111,7 +111,7 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
-              {tab === 'All' ? 'All Leads' : LEAD_STATUSES.find(s => s.value === tab)?.label || tab}
+              {tab === 'All' ? 'All' : LEAD_STATUSES.find(s => s.value === tab)?.label || tab}
             </button>
           ))}
         </div>

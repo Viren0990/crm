@@ -12,7 +12,8 @@ export function ConfirmModal({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   isDestructive = false,
-  isPending = false
+  isPending = false,
+  hideCancel = false
 }: {
   isOpen: boolean
   onClose: () => void
@@ -23,6 +24,7 @@ export function ConfirmModal({
   cancelText?: string
   isDestructive?: boolean
   isPending?: boolean
+  hideCancel?: boolean
 }) {
   if (!isOpen) return null
 
@@ -47,9 +49,11 @@ export function ConfirmModal({
         <p className="text-sm text-gray-600 mb-6">{description}</p>
         
         <div className="flex items-center justify-end gap-3">
-          <Button variant="ghost" type="button" onClick={onClose} disabled={isPending}>
-            {cancelText}
-          </Button>
+          {!hideCancel && (
+            <Button variant="ghost" type="button" onClick={onClose} disabled={isPending}>
+              {cancelText}
+            </Button>
+          )}
           <button
             type="button"
             onClick={onConfirm}

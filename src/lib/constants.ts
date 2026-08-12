@@ -4,6 +4,7 @@ export const LEAD_STATUSES = [
   { value: 'CONTACTED', label: 'Needs Call Back', color: 'indigo' },
   { value: 'QUALIFIED', label: 'Qualified', color: 'violet' },
   { value: 'DEMO_SCHEDULED', label: 'Demo Scheduled', color: 'amber' },
+  { value: 'DETAILS_SENT', label: 'Details Sent, Needs Follow-up', color: 'cyan' },
   { value: 'LOST', label: 'Lost', color: 'rose' },
 ] as const
 
