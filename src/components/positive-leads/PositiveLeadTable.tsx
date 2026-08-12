@@ -1,70 +1,88 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { SlideOver } from '@/components/ui/SlideOver'
 import { FollowUpsList } from '@/components/leads/FollowUpsList'
-import { formatDate } from '@/lib/utils'
-import { ArrowDownAZ, ArrowUpAZ, Search, MessageSquare, Rocket, ThumbsUp } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
-import { createOnboardingAction } from '@/app/actions/onboardingActions'
-import { markLeadPositiveAction } from '@/app/actions/leadActions'
-import { useRouter } from 'next/navigation'
+import { formatDate } from '@/lib/utils'
+import { ArrowDownAZ, ArrowUpAZ, Search, MessageSquare, ThumbsUp } from 'lucide-react'
+import { markDetailsSentAction } from '@/app/actions/followUpActions'
+import { updateLeadStatusOnlyAction } from '@/app/actions/leadActions'
+import { FOLLOW_UP_STATUSES } from '@/lib/constants'
 
-export function FollowUpTable({ initialLeads }: { initialLeads: any[] }) {
+export function PositiveLeadTable({ initialLeads }: { initialLeads: any[] }) {
   const [leads, setLeads] = useState(initialLeads)
   const [isSlideOverOpen, setIsSlideOverOpen] = useState(false)
   const [selectedLead, setSelectedLead] = useState<any>(null)
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [searchQuery, setSearchQuery] = useState('')
-  const router = useRouter()
-  const [markPositiveLead, setMarkPositiveLead] = useState<any | null>(null)
-  const [isMarkingPositive, setIsMarkingPositive] = useState(false)
+  const [statusFilter, setStatusFilter] = useState('All')
+  const [isPending, startTransition] = useTransition()
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [togglingLeadId, setTogglingLeadId] = useState<string | null>(null)
 
   useEffect(() => {
     setLeads(initialLeads)
   }, [initialLeads])
 
   const filteredLeads = leads.filter(lead => {
+    if (statusFilter !== 'All' && lead.followUpStatus !== statusFilter) return false
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase()
       const matchName = lead.name?.toLowerCase().includes(q)
       const matchEmail = lead.email?.toLowerCase().includes(q)
       const matchCompany = lead.company?.toLowerCase().includes(q)
-      if (!matchName && !matchEmail && !matchCompany) return false
+      const matchPhone = lead.phone?.toLowerCase().includes(q)
+      if (!matchName && !matchEmail && !matchCompany && !matchPhone) return false
     }
     return true
   })
 
-  // Sort by the latest follow up date
   const sortedLeads = [...filteredLeads].sort((a, b) => {
-    const timeA = a.followUps && a.followUps.length > 0 ? new Date(a.followUps[0].scheduledDate).getTime() : 0
-    const timeB = b.followUps && b.followUps.length > 0 ? new Date(b.followUps[0].scheduledDate).getTime() : 0
+    const timeA = new Date(a.updatedAt).getTime()
+    const timeB = new Date(b.updatedAt).getTime()
     return sortOrder === 'desc' ? timeB - timeA : timeA - timeB
   })
 
   return (
     <div className="flex flex-col h-full">
       {/* Header Toolbar */}
-      <div className="flex items-center justify-end gap-3 px-4 py-3 border-b border-gray-100">
-        <div className="relative flex items-center shrink-0">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3" />
-          <input 
-            type="text" 
-            placeholder="Search leads..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-4 py-1.5 rounded-full border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48 transition-all focus:w-64"
-          />
+      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          {['All', ...FOLLOW_UP_STATUSES.filter(s => s.value !== 'LOST').map(s => s.value)].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setStatusFilter(tab)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                statusFilter === tab 
+                  ? 'bg-indigo-600 text-white' 
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+            >
+              {tab === 'All' ? 'All' : FOLLOW_UP_STATUSES.find(s => s.value === tab)?.label || tab}
+            </button>
+          ))}
         </div>
-        <button
-          onClick={() => setSortOrder(s => s === 'desc' ? 'asc' : 'desc')}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
-        >
-          {sortOrder === 'desc' ? <ArrowDownAZ className="w-4 h-4" /> : <ArrowUpAZ className="w-4 h-4" />}
-          Sort Latest
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="relative flex items-center shrink-0">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3" />
+            <input 
+              type="text" 
+              placeholder="Search leads..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-4 py-1.5 rounded-full border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48 transition-all focus:w-64"
+            />
+          </div>
+          <button
+            onClick={() => setSortOrder(s => s === 'desc' ? 'asc' : 'desc')}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+          >
+            {sortOrder === 'desc' ? <ArrowDownAZ className="w-4 h-4" /> : <ArrowUpAZ className="w-4 h-4" />}
+            Sort
+          </button>
+        </div>
       </div>
 
       {/* Table Container */}
@@ -78,15 +96,15 @@ export function FollowUpTable({ initialLeads }: { initialLeads: any[] }) {
               <th>Assigned Staff</th>
               <th>Total Attempts</th>
               <th>Latest Attempt Date</th>
-              <th>Latest Notes</th>
-              <th>Actions</th>
+              <th className="text-center">Details Sent</th>
+              <th>Notes</th>
             </tr>
           </thead>
           <tbody>
             {sortedLeads.length === 0 ? (
               <tr>
                 <td colSpan={8} className="text-center py-12 text-gray-500">
-                  No leads in follow-up stage.
+                  No positive leads yet. Mark leads as positive from the Leads page.
                 </td>
               </tr>
             ) : sortedLeads.map((lead, index) => {
@@ -99,7 +117,7 @@ export function FollowUpTable({ initialLeads }: { initialLeads: any[] }) {
               return (
                 <tr 
                   key={lead.id} 
-                  className={`${isPastDue ? 'bg-amber-50/30' : ''} cursor-pointer hover:bg-gray-50/50 transition-colors`}
+                  className={`${isPastDue ? 'bg-amber-50/30' : ''} cursor-pointer hover:bg-gray-50/50 transition-colors group`}
                   onClick={() => {
                     setSelectedLead(lead)
                     setIsSlideOverOpen(true)
@@ -112,10 +130,10 @@ export function FollowUpTable({ initialLeads }: { initialLeads: any[] }) {
                     <div className="font-medium text-indigo-600 hover:underline">
                       {lead.name || '—'}
                     </div>
-                    <div className="text-xs text-gray-500 flex items-center gap-1.5 group mt-0.5">
+                    <div className="text-xs text-gray-500 flex items-center gap-1.5 group/contact mt-0.5">
                       {lead.phone || '—'}
                       {lead.phone && (
-                        <a href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 transition-opacity" title="Message on WhatsApp">
+                        <a href={`https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="opacity-0 group-hover/contact:opacity-100 transition-opacity" title="Message on WhatsApp">
                           <MessageSquare className="w-3.5 h-3.5 text-green-600 hover:text-green-700" />
                         </a>
                       )}
@@ -149,35 +167,32 @@ export function FollowUpTable({ initialLeads }: { initialLeads: any[] }) {
                       <span className="text-gray-400">—</span>
                     )}
                   </td>
-                  <td>
-                    <div className="text-sm text-gray-500 truncate max-w-[200px]" title={latestFollowUp?.notes || ''}>
-                      {latestFollowUp?.notes || '—'}
+                  <td onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-center">
+                      <button 
+                        type="button"
+                        disabled={togglingLeadId === lead.id}
+                        onClick={async () => {
+                          setTogglingLeadId(lead.id)
+                          try {
+                            if (lead.status === 'DETAILS_SENT') {
+                              await updateLeadStatusOnlyAction(lead.id, 'NEW')
+                            } else {
+                              await markDetailsSentAction(lead.id)
+                              setShowSuccessModal(true)
+                            }
+                          } catch (e) {
+                            console.error("Toggle failed", e)
+                          } finally {
+                            setTogglingLeadId(null)
+                          }
+                        }}
+                        className={`toggle-switch ${lead.status === 'DETAILS_SENT' ? 'active' : ''} ${togglingLeadId === lead.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      />
                     </div>
                   </td>
-                  <td onClick={e => e.stopPropagation()}>
-                    <div className="flex items-center gap-2">
-                      {!lead.isPositive && (
-                        <button
-                          onClick={() => setMarkPositiveLead(lead)}
-                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors"
-                          title="Mark as Positive Lead"
-                        >
-                          <ThumbsUp className="w-3.5 h-3.5" />
-                          Positive
-                        </button>
-                      )}
-                      <Button 
-                        size="sm" 
-                        variant="secondary" 
-                        className="h-7 text-xs px-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                        onClick={async () => {
-                          await createOnboardingAction(lead.id)
-                          router.push('/onboarding')
-                        }}
-                      >
-                        <Rocket className="w-3 h-3 mr-1" /> Onboard
-                      </Button>
-                    </div>
+                  <td>
+                    <span className="text-xs text-gray-600 line-clamp-2 max-w-[160px]">{lead.notes || '—'}</span>
                   </td>
                 </tr>
               )
@@ -189,7 +204,7 @@ export function FollowUpTable({ initialLeads }: { initialLeads: any[] }) {
       <SlideOver 
         isOpen={isSlideOverOpen} 
         onClose={() => setIsSlideOverOpen(false)}
-        title="All Follow Ups"
+        title="Follow Ups"
       >
         {selectedLead && (() => {
           const freshLead = leads.find((l: any) => l.id === selectedLead.id) || selectedLead;
@@ -198,26 +213,24 @@ export function FollowUpTable({ initialLeads }: { initialLeads: any[] }) {
               leadId={freshLead.id} 
               initialFollowUps={freshLead.followUps || []} 
               initialFollowUpStatus={freshLead.followUpStatus || 'ONGOING'}
+              onStatusChange={(newStatus) => {
+                if (newStatus === 'LOST') {
+                  setIsSlideOverOpen(false);
+                }
+              }}
             />
           );
         })()}
       </SlideOver>
 
       <ConfirmModal
-        isOpen={markPositiveLead !== null}
-        onClose={() => setMarkPositiveLead(null)}
-        onConfirm={async () => {
-          if (markPositiveLead) {
-            setIsMarkingPositive(true)
-            await markLeadPositiveAction(markPositiveLead.id)
-            setIsMarkingPositive(false)
-            setMarkPositiveLead(null)
-          }
-        }}
-        title="Mark as Positive Lead"
-        description={`Move "${markPositiveLead?.name}" to the Positive Leads dashboard?`}
-        confirmText="Yes, Mark Positive"
-        isPending={isMarkingPositive}
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        onConfirm={() => setShowSuccessModal(false)}
+        title="✅ Details Sent!"
+        description="This lead has been successfully marked as 'Details Sent' and added to your Follow-Ups."
+        confirmText="OK"
+        hideCancel={true}
       />
     </div>
   )

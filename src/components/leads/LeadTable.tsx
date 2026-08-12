@@ -6,14 +6,17 @@ import { SlideOver } from '@/components/ui/SlideOver'
 import { LeadForm } from '@/components/leads/LeadForm'
 import { LEAD_STATUSES, LEAD_TYPES, LEAD_PRIORITIES, LEAD_STAFF } from '@/lib/constants'
 import { formatDate, getStaleLevel, getBadgeClasses, getSolidBadgeClasses, cn } from '@/lib/utils'
-import { AlertCircle, AlertTriangle, ArrowDownAZ, ArrowUpAZ, Search, Mail, MessageSquare, Download } from 'lucide-react'
-import { toggleLeadFieldAction } from '@/app/actions/leadActions'
+import { AlertCircle, AlertTriangle, ArrowDownAZ, ArrowUpAZ, Search, Mail, MessageSquare, Download, ThumbsUp } from 'lucide-react'
+import { toggleLeadFieldAction, markLeadPositiveAction } from '@/app/actions/leadActions'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 // Using any for leads for quick setup, typically you'd export types from Prisma
 export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
   const [leads, setLeads] = useState(initialLeads)
   const [isPending, startTransition] = useTransition()
   const [editingLead, setEditingLead] = useState<any | null>(null)
+  const [markPositiveLead, setMarkPositiveLead] = useState<any | null>(null)
+  const [isMarkingPositive, setIsMarkingPositive] = useState(false)
 
   useEffect(() => {
     setLeads(initialLeads)
@@ -21,7 +24,7 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
 
   // Status Tabs
   const tabs = ['All', 'NEW', 'CONTACTED', 'QUALIFIED', 'DEMO_SCHEDULED', 'LOST']
-  const [activeTab, setActiveTab] = useState('NEW')
+  const [activeTab, setActiveTab] = useState('All')
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [searchQuery, setSearchQuery] = useState('')
   const [staffFilter, setStaffFilter] = useState('All')
@@ -160,8 +163,8 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
               <th>Address / City</th>
               <th>Type / Source</th>
               <th>Status</th>
-              <th className="text-center">WA / Called</th>
               <th>Notes</th>
+              <th className="text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -177,7 +180,7 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
               const type = LEAD_TYPES.find(t => t.value === lead.type)
 
               return (
-                <tr key={lead.id}>
+                <tr key={lead.id} className="group">
                   <td className="text-center" onClick={e => e.stopPropagation()}>
                     <div className={cn(
                       "inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold",
@@ -232,23 +235,19 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
                     {status && <Badge color={status.color}>{status.label}</Badge>}
                   </td>
                   <td>
-                    <div className="flex items-center justify-center gap-2">
-                      <button 
-                        onClick={() => startTransition(async () => { await toggleLeadFieldAction(lead.id, 'whatsappSent', lead.whatsappSent) })}
-                        disabled={isPending}
-                        className={`toggle-switch ${lead.whatsappSent ? 'active' : ''} ${isPending ? 'opacity-50' : ''}`} 
-                      />
-                      <span className="text-xs text-gray-500">WA</span>
-                      <button 
-                        onClick={() => startTransition(async () => { await toggleLeadFieldAction(lead.id, 'called', lead.called) })}
-                        disabled={isPending}
-                        className={`toggle-switch ${lead.called ? 'active' : ''} ${isPending ? 'opacity-50' : ''}`} 
-                      />
-                      <span className="text-xs text-gray-500">Call</span>
-                    </div>
+                    <span className="text-xs text-gray-600 line-clamp-2 max-w-[160px]">{lead.notes || '—'}</span>
                   </td>
                   <td>
-                    <span className="text-xs text-gray-600 line-clamp-2 max-w-[160px]">{lead.notes || '—'}</span>
+                    <div className="flex items-center justify-center">
+                      <button
+                        onClick={() => setMarkPositiveLead(lead)}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Mark as Positive Lead"
+                      >
+                        <ThumbsUp className="w-3.5 h-3.5" />
+                        Positive
+                      </button>
+                    </div>
                   </td>
                 </tr>
               )
@@ -281,6 +280,23 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
           />
         )}
       </SlideOver>
+
+      <ConfirmModal
+        isOpen={markPositiveLead !== null}
+        onClose={() => setMarkPositiveLead(null)}
+        onConfirm={async () => {
+          if (markPositiveLead) {
+            setIsMarkingPositive(true)
+            await markLeadPositiveAction(markPositiveLead.id)
+            setIsMarkingPositive(false)
+            setMarkPositiveLead(null)
+          }
+        }}
+        title="Mark as Positive Lead"
+        description={`Move "${markPositiveLead?.name}" to the Positive Leads dashboard? You can manage follow-ups from there.`}
+        confirmText="Yes, Mark Positive"
+        isPending={isMarkingPositive}
+      />
     </div>
   )
 }

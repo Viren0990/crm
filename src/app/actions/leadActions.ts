@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath, revalidateTag } from 'next/cache'
 
-// Get all leads
+// Get all basic leads
 export async function getLeads() {
   return prisma.lead.findMany({
     orderBy: { updatedAt: 'desc' },
@@ -11,6 +11,20 @@ export async function getLeads() {
       demo: true,
       followUps: {
         orderBy: { attemptNumber: 'asc' }
+      }
+    }
+  })
+}
+
+// Get all positive leads with their follow ups
+export async function getPositiveLeads() {
+  return prisma.lead.findMany({
+    where: { isPositive: true },
+    orderBy: { updatedAt: 'desc' },
+    include: {
+      demo: true,
+      followUps: {
+        orderBy: { attemptNumber: 'desc' }
       }
     }
   })
@@ -74,6 +88,7 @@ export async function createLeadAction(formData: FormData) {
     }
 
     revalidatePath('/leads')
+    revalidatePath('/positive-leads')
     revalidatePath('/')
     return { success: true }
   } catch (error) {
@@ -104,10 +119,25 @@ export async function updateLeadAction(leadId: string, formData: FormData) {
     const demoTimeAmPm = formData.get('demoTimeAmPm') as string
     const demoTime = demoTimeValue ? `${demoTimeValue} ${demoTimeAmPm}` : ''
 
+    const existingLead = await prisma.lead.findUnique({ where: { id: leadId } })
+    
     const updatedLead = await prisma.lead.update({
       where: { id: leadId },
       data
     })
+
+    // Log if notes were changed
+    if (existingLead && data.notes !== existingLead.notes) {
+      await prisma.activity.create({
+        data: {
+          leadId,
+          type: 'NOTE',
+          title: 'Notes Updated',
+          description: `Notes were changed. Previous notes: "${existingLead.notes || 'None'}"`,
+          performedBy: 'System', // Replace with auth user later
+        }
+      })
+    }
 
     // Auto-create Demo if status is DEMO_SCHEDULED and it doesn't exist yet
     if (data.status === 'DEMO_SCHEDULED') {
@@ -123,6 +153,7 @@ export async function updateLeadAction(leadId: string, formData: FormData) {
           }
         })
         revalidatePath('/leads')
+    revalidatePath('/positive-leads')
         revalidatePath('/demos')
         revalidatePath('/')
       } else if (demoTime || demoDate) {
@@ -159,6 +190,7 @@ export async function updateLeadAction(leadId: string, formData: FormData) {
     })
 
     revalidatePath('/leads')
+    revalidatePath('/positive-leads')
     revalidatePath('/demos')
     revalidatePath('/followups')
     revalidatePath('/onboarding')
@@ -167,6 +199,25 @@ export async function updateLeadAction(leadId: string, formData: FormData) {
   } catch (error) {
     console.error('Failed to update lead:', error)
     return { success: false, error: 'Failed to update lead.' }
+  }
+}
+
+// Update only the status of an existing lead
+export async function updateLeadStatusOnlyAction(leadId: string, status: string) {
+  try {
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: { status }
+    })
+    revalidatePath('/leads')
+    revalidatePath('/positive-leads')
+    revalidatePath('/demos')
+    revalidatePath('/followups')
+    revalidatePath('/')
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to update lead status:', error)
+    return { success: false, error: 'Failed to update lead status.' }
   }
 }
 
@@ -191,6 +242,7 @@ export async function toggleLeadFieldAction(leadId: string, field: 'whatsappSent
     })
 
     revalidatePath('/leads')
+    revalidatePath('/positive-leads')
     revalidatePath('/')
     return { success: true }
   } catch (error) {
@@ -238,6 +290,7 @@ export async function updateLeadStatusAction(leadId: string, newStatus: string) 
     }
 
     revalidatePath('/leads')
+    revalidatePath('/positive-leads')
     revalidatePath('/')
     return { success: true }
   } catch (error) {
@@ -260,6 +313,7 @@ export async function addActivityNoteAction(leadId: string, note: string) {
     })
     
     revalidatePath('/leads')
+    revalidatePath('/positive-leads')
     revalidatePath('/')
     return { success: true }
   } catch (error) {
@@ -329,6 +383,7 @@ export async function importLeadsAction(leadsData: any[]) {
     }
 
     revalidatePath('/leads')
+    revalidatePath('/positive-leads')
     revalidatePath('/') // Dashboard
     return { success: true, count: dataToInsert.length }
   } catch (error) {
@@ -345,6 +400,7 @@ export async function deleteLeadAction(leadId: string) {
     })
     
     revalidatePath('/leads')
+    revalidatePath('/positive-leads')
     revalidatePath('/demos')
     revalidatePath('/followups')
     revalidatePath('/onboarding')
@@ -353,5 +409,34 @@ export async function deleteLeadAction(leadId: string) {
   } catch (error) {
     console.error('Failed to delete lead:', error)
     return { success: false, error: 'Failed to delete lead.' }
+  }
+}
+
+// Mark a lead as positive
+export async function markLeadPositiveAction(leadId: string) {
+  try {
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: { isPositive: true, followUpStatus: 'ONGOING' }
+    })
+
+    await prisma.activity.create({
+      data: {
+        leadId,
+        type: 'STATUS_CHANGE',
+        title: 'Lead marked as Positive',
+        performedBy: 'System',
+      }
+    })
+
+    revalidatePath('/leads')
+    revalidatePath('/positive-leads')
+    revalidatePath('/positive-leads')
+    revalidatePath('/followups')
+    revalidatePath('/')
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to mark lead as positive:', error)
+    return { success: false, error: 'Failed to mark lead as positive.' }
   }
 }

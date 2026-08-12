@@ -8,6 +8,13 @@ export const LEAD_STATUSES = [
   { value: 'LOST', label: 'Lost', color: 'rose' },
 ] as const
 
+// ── Follow Up Overall Statuses ────────────────────────
+export const FOLLOW_UP_STATUSES = [
+  { value: 'ONGOING', label: 'Ongoing', color: 'amber' },
+  { value: 'COMPLETED', label: 'Completed', color: 'emerald' },
+  { value: 'LOST', label: 'Lost', color: 'rose' },
+] as const
+
 // ── Lead Types ────────────────────────────────────
 export const LEAD_TYPES = [
   { value: 'B2B', label: 'B2B', color: 'blue' },

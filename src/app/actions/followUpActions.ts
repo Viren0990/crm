@@ -68,6 +68,7 @@ export async function createFollowUpAction(leadId: string, formData: FormData) {
 
     revalidatePath('/')
     revalidatePath('/leads')
+    revalidatePath('/positive-leads')
     revalidatePath('/followups')
     return { success: true }
   } catch (error) {
@@ -103,6 +104,7 @@ export async function updateFollowUpAction(id: string, formData: FormData) {
 
     revalidatePath('/')
     revalidatePath('/leads')
+    revalidatePath('/positive-leads')
     revalidatePath('/followups')
     return { success: true }
   } catch (error) {
@@ -118,6 +120,7 @@ export async function deleteFollowUpAction(id: string) {
     })
     revalidatePath('/')
     revalidatePath('/leads')
+    revalidatePath('/positive-leads')
     revalidatePath('/followups')
     return { success: true }
   } catch (error) {
@@ -155,10 +158,36 @@ export async function markDetailsSentAction(leadId: string) {
     
     revalidatePath('/')
     revalidatePath('/leads')
+    revalidatePath('/positive-leads')
     revalidatePath('/followups')
     return { success: true }
   } catch (error) {
     console.error('Error marking details sent:', error)
     return { success: false, error: 'Failed to update lead and create follow up' }
+  }
+}
+
+export async function updateLeadFollowUpStatusAction(leadId: string, status: string) {
+  try {
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: { followUpStatus: status }
+    })
+    
+    if (status === 'LOST') {
+      await prisma.lead.update({
+        where: { id: leadId },
+        data: { status: 'LOST', isPositive: false }
+      })
+    }
+
+    revalidatePath('/')
+    revalidatePath('/leads')
+    revalidatePath('/positive-leads')
+    revalidatePath('/followups')
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating follow up status:', error)
+    return { success: false, error: 'Failed to update status' }
   }
 }

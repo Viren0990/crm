@@ -28,9 +28,9 @@ model Lead {
   called        Boolean   @default(false)
 
   // Status within Leads stage
-  status        String    @default("NEW")       // "NEW" | "CONTACTED" | "QUALIFIED" | "DEMO_SCHEDULED" | "LOST"
-
-
+  status        String    @default("NEW")       // "NEW" | "CONTACTED" | "QUALIFIED" | "DEMO_SCHEDULED" | "DETAILS_SENT" | "LOST"
+  followUpStatus String   @default("ONGOING")   // "ONGOING" | "COMPLETED" | "LOST"
+  isPositive    Boolean   @default(false)        // true = moved to Positive Leads pipeline
 
   // Relationships
   demo          Demo?
@@ -45,6 +45,7 @@ model Lead {
   @@index([type])
   @@index([staff])
   @@index([priority])
+  @@index([isPositive])
 }
 
 // ── Follow Up ──────────────────────────────────────

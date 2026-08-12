@@ -4,13 +4,26 @@ import { useState, useRef, useEffect } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { formatDate } from '@/lib/utils'
-import { createFollowUpAction, updateFollowUpAction, deleteFollowUpAction } from '@/app/actions/followUpActions'
+import { createFollowUpAction, updateFollowUpAction, deleteFollowUpAction, updateLeadFollowUpStatusAction } from '@/app/actions/followUpActions'
 import { Plus, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { FOLLOW_UP_STATUSES } from '@/lib/constants'
 
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
-export function FollowUpsList({ leadId, initialFollowUps = [] }: { leadId: string, initialFollowUps?: any[] }) {
+export function FollowUpsList({ 
+  leadId, 
+  initialFollowUps = [], 
+  initialFollowUpStatus = 'ONGOING',
+  onStatusChange 
+}: { 
+  leadId: string, 
+  initialFollowUps?: any[], 
+  initialFollowUpStatus?: string,
+  onStatusChange?: (newStatus: string) => void 
+}) {
   const [followUps, setFollowUps] = useState(initialFollowUps)
+  const [overallStatus, setOverallStatus] = useState(initialFollowUpStatus)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -18,21 +31,55 @@ export function FollowUpsList({ leadId, initialFollowUps = [] }: { leadId: strin
 
   useEffect(() => {
     setFollowUps(initialFollowUps)
-  }, [initialFollowUps])
+    setOverallStatus(initialFollowUpStatus)
+  }, [initialFollowUps, initialFollowUpStatus])
   
   // Very simple view to list follow ups and add a new one.
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Overall Status Banner */}
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <h4 className="text-sm font-semibold text-gray-900">Follow-Up Journey Status</h4>
+          <p className="text-xs text-gray-500 mt-0.5">Track the overall progress of this lead.</p>
+        </div>
+        <select
+          value={overallStatus}
+          disabled={isUpdatingStatus}
+          onChange={async (e) => {
+            const newStatus = e.target.value;
+            setIsUpdatingStatus(true);
+            await updateLeadFollowUpStatusAction(leadId, newStatus);
+            setOverallStatus(newStatus);
+            setIsUpdatingStatus(false);
+            if (onStatusChange) {
+              onStatusChange(newStatus);
+            }
+          }}
+          className={`text-sm font-medium px-3 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors cursor-pointer disabled:opacity-50 ${
+            overallStatus === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+            overallStatus === 'LOST' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+            'bg-amber-50 text-amber-700 border-amber-200'
+          }`}
+        >
+          {FOLLOW_UP_STATUSES.map(status => (
+            <option key={status.value} value={status.value} className="bg-white text-gray-900">
+              {status.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Follow-Ups</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Message History</h3>
         <Button 
           type="button" 
           size="sm" 
           onClick={() => setIsAdding(true)}
           disabled={isAdding || editingId !== null}
         >
-          <Plus className="w-4 h-4 mr-2" /> Add Follow-Up
+          <Plus className="w-4 h-4 mr-2" /> Add Attempt
         </Button>
       </div>
 
@@ -103,13 +150,6 @@ export function FollowUpsList({ leadId, initialFollowUps = [] }: { leadId: strin
                   <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-100">
                     <span className="font-medium block mb-1">Notes:</span>
                     {fu.notes}
-                  </div>
-                )}
-                
-                {fu.result && (
-                  <div className="text-sm text-gray-900 bg-emerald-50 text-emerald-900 p-3 rounded-lg border border-emerald-100">
-                    <span className="font-medium block mb-1">Result:</span>
-                    {fu.result}
                   </div>
                 )}
               </>
@@ -214,17 +254,6 @@ function FollowUpInlineForm({ leadId, initialData, onCancel, onSuccess }: { lead
           className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-indigo-500 resize-none" 
         ></textarea>
       </div>
-      
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Result / Outcome</label>
-          <input 
-            type="text" 
-            name="result" 
-            defaultValue={initialData?.result || ''}
-            placeholder="e.g. Ready to buy"
-            className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-indigo-500" 
-          />
-        </div>
 
       <div className="flex justify-end gap-2 pt-2 border-t">
         <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={isPending}>Cancel</Button>

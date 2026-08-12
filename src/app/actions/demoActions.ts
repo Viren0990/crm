@@ -84,6 +84,7 @@ export async function updateDemoAction(demoId: string, formData: FormData) {
     revalidatePath('/demos')
     revalidatePath('/followups')
     revalidatePath('/leads')
+    revalidatePath('/positive-leads')
     revalidatePath('/')
     return { success: true }
   } catch (error) {
@@ -133,6 +134,7 @@ export async function updateFollowUpAction(demoId: string, formData: FormData) {
 
     revalidatePath('/followups')
     revalidatePath('/leads')
+    revalidatePath('/positive-leads')
     revalidatePath('/')
     return { success: true }
   } catch (error) {

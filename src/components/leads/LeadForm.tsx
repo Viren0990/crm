@@ -4,11 +4,12 @@ import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { LEAD_TYPES, LEAD_PRIORITIES, LEAD_SOURCES, LEAD_STAFF, LEAD_STATUSES, DEMO_STATUSES } from '@/lib/constants'
 import { formatForDateTimeLocal } from '@/lib/utils'
-import { createLeadAction, updateLeadAction, deleteLeadAction } from '@/app/actions/leadActions'
+import { createLeadAction, updateLeadAction, deleteLeadAction, updateLeadStatusOnlyAction, markLeadPositiveAction } from '@/app/actions/leadActions'
 import { markDetailsSentAction } from '@/app/actions/followUpActions'
 import { ActivityTimeline } from '@/components/leads/ActivityTimeline'
 import { FollowUpsList } from '@/components/leads/FollowUpsList'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { ThumbsUp } from 'lucide-react'
 
 export function LeadForm({ 
   initialData,
@@ -27,6 +28,8 @@ export function LeadForm({
   const [status, setStatus] = useState(initialData?.status || 'NEW')
   const [activeTab, setActiveTab] = useState<'details' | 'activity'>('details')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showMarkPositiveConfirm, setShowMarkPositiveConfirm] = useState(false)
+  const [isMarkingPositive, setIsMarkingPositive] = useState(false)
   
   const [isCustomStaff, setIsCustomStaff] = useState(() => {
     if (!initialData?.staff) return false;
@@ -114,15 +117,13 @@ export function LeadForm({
                   setIsTogglePending(true);
                   try {
                     if (status === 'DETAILS_SENT') {
-                    const fd = new FormData();
-                    fd.append('status', 'NEW');
-                    await updateLeadAction(initialData.id, fd);
-                    setStatus('NEW');
-                  } else {
-                    await markDetailsSentAction(initialData.id);
-                    setStatus('DETAILS_SENT');
-                    setShowSuccessModal(true);
-                  }
+                      await updateLeadStatusOnlyAction(initialData.id, 'NEW');
+                      setStatus('NEW');
+                    } else {
+                      await markDetailsSentAction(initialData.id);
+                      setStatus('DETAILS_SENT');
+                      setShowSuccessModal(true);
+                    }
                   } catch (e) {
                     console.error("Toggle failed", e);
                   } finally {
@@ -288,9 +289,21 @@ export function LeadForm({
       </div>
 
       <div className="pt-4 flex items-center justify-between border-t">
-        {initialData ? (
-          <Button type="button" variant="ghost" onClick={() => setShowDeleteConfirm(true)} disabled={isPending} className="text-rose-600 hover:text-rose-700 hover:bg-rose-50">Delete</Button>
-        ) : <div />}
+        <div className="flex items-center gap-2">
+          {initialData ? (
+            <Button type="button" variant="ghost" onClick={() => setShowDeleteConfirm(true)} disabled={isPending} className="text-rose-600 hover:text-rose-700 hover:bg-rose-50">Delete</Button>
+          ) : <div />}
+          {initialData && !initialData.isPositive && (
+            <button
+              type="button"
+              onClick={() => setShowMarkPositiveConfirm(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+            >
+              <ThumbsUp className="w-4 h-4" />
+              Mark Positive
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <Button type="button" variant="ghost" onClick={onCancel} disabled={isPending}>Cancel</Button>
           <Button type="submit" isLoading={isPending}>{initialData ? 'Save Changes' : 'Create Lead'}</Button>
@@ -323,6 +336,21 @@ export function LeadForm({
         description="This lead has been successfully marked as 'Details Sent' and automatically added to your Follow-Ups dashboard."
         confirmText="OK"
         hideCancel={true}
+      />
+      <ConfirmModal
+        isOpen={showMarkPositiveConfirm}
+        onClose={() => setShowMarkPositiveConfirm(false)}
+        onConfirm={async () => {
+          setIsMarkingPositive(true)
+          await markLeadPositiveAction(initialData.id)
+          setIsMarkingPositive(false)
+          setShowMarkPositiveConfirm(false)
+          onSuccess()
+        }}
+        title="Mark as Positive Lead"
+        description={`Move "${initialData?.name}" to the Positive Leads dashboard? You can manage follow-ups from there.`}
+        confirmText="Yes, Mark Positive"
+        isPending={isMarkingPositive}
       />
     </div>
   )

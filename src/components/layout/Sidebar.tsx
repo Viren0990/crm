@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Calendar, Phone, CheckSquare, Settings } from 'lucide-react'
+import { LayoutDashboard, Users, Calendar, Phone, CheckSquare, Settings, ThumbsUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Leads', href: '/leads', icon: Users },
+  { name: 'Positive Leads', href: '/positive-leads', icon: ThumbsUp },
   { name: 'Follow Ups', href: '/followups', icon: Phone },
   { name: 'Onboarding', href: '/onboarding', icon: CheckSquare },
   { name: 'Demos', href: '/demos', icon: Calendar },
