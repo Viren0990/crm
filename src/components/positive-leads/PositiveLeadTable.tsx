@@ -1,17 +1,21 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
 import { SlideOver } from '@/components/ui/SlideOver'
 import { FollowUpsList } from '@/components/leads/FollowUpsList'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { formatDate } from '@/lib/utils'
-import { ArrowDownAZ, ArrowUpAZ, Search, MessageSquare, ThumbsUp } from 'lucide-react'
+import { ArrowDownAZ, ArrowUpAZ, Search, MessageSquare, ThumbsUp, Rocket } from 'lucide-react'
 import { markDetailsSentAction } from '@/app/actions/followUpActions'
 import { updateLeadStatusOnlyAction } from '@/app/actions/leadActions'
+import { createOnboardingAction } from '@/app/actions/onboardingActions'
 import { FOLLOW_UP_STATUSES } from '@/lib/constants'
 
 export function PositiveLeadTable({ initialLeads }: { initialLeads: any[] }) {
+  const router = useRouter()
   const [leads, setLeads] = useState(initialLeads)
   const [isSlideOverOpen, setIsSlideOverOpen] = useState(false)
   const [selectedLead, setSelectedLead] = useState<any>(null)
@@ -98,12 +102,13 @@ export function PositiveLeadTable({ initialLeads }: { initialLeads: any[] }) {
               <th>Latest Attempt Date</th>
               <th className="text-center">Details Sent</th>
               <th>Notes</th>
+              <th className="text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
             {sortedLeads.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-12 text-gray-500">
+                <td colSpan={9} className="text-center py-12 text-gray-500">
                   No positive leads yet. Mark leads as positive from the Leads page.
                 </td>
               </tr>
@@ -193,6 +198,21 @@ export function PositiveLeadTable({ initialLeads }: { initialLeads: any[] }) {
                   </td>
                   <td>
                     <span className="text-xs text-gray-600 line-clamp-2 max-w-[160px]">{lead.notes || '—'}</span>
+                  </td>
+                  <td onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center justify-center">
+                      <Button 
+                        size="sm" 
+                        variant="secondary" 
+                        className="h-7 text-xs px-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                        onClick={async () => {
+                          await createOnboardingAction(lead.id)
+                          router.push('/onboarding')
+                        }}
+                      >
+                        <Rocket className="w-3 h-3 mr-1" /> Onboard
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               )
