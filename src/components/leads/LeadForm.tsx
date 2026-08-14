@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
 import { LEAD_TYPES, LEAD_PRIORITIES, LEAD_SOURCES, LEAD_STAFF } from '@/lib/constants'
 import { formatForDateTimeLocal } from '@/lib/utils'
@@ -8,6 +8,7 @@ import { createLeadAction, updateLeadAction, deleteLeadAction } from '@/app/acti
 import { ActivityTimeline } from '@/components/leads/ActivityTimeline'
 import { FollowUpsList } from '@/components/leads/FollowUpsList'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { Calendar } from 'lucide-react'
 
 export function LeadForm({ 
   initialData,
@@ -24,7 +25,8 @@ export function LeadForm({
   const [error, setError] = useState<string | null>(null)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [status, setStatus] = useState(initialData?.status || 'NEW')
-  const [activeTab, setActiveTab] = useState<'details' | 'activity'>('details')
+  const [scheduleDemo, setScheduleDemo] = useState(initialData?.demo ? true : false)
+  const [activeTab, setActiveTab] = useState<'details' | 'activity' | 'followups'>('details')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   
   const [isCustomStaff, setIsCustomStaff] = useState(() => {
@@ -100,6 +102,14 @@ export function LeadForm({
               className={`text-sm font-medium transition-colors ${activeTab === 'activity' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
             >
               Activity History
+            </button>
+
+            <button 
+              type="button" 
+              onClick={() => setActiveTab('followups')}
+              className={`text-sm font-medium transition-colors ${activeTab === 'followups' ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Follow Ups
             </button>
           </div>
         </div>
@@ -215,9 +225,66 @@ export function LeadForm({
             )}
           </div>
         </div>
+
+        <div className="pt-4 border-t border-gray-100">
+          <div 
+            onClick={() => setScheduleDemo(!scheduleDemo)}
+            className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${
+              scheduleDemo ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${scheduleDemo ? 'bg-indigo-100 text-indigo-700' : 'bg-white text-gray-500 shadow-sm'}`}>
+                <Calendar className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className={`text-sm font-semibold ${scheduleDemo ? 'text-indigo-900' : 'text-gray-700'}`}>Schedule a Demo</h4>
+                <p className="text-xs text-gray-500 mt-0.5">Book a product demonstration with this lead</p>
+              </div>
+            </div>
+            
+            <button 
+              type="button" 
+              className={`toggle-switch ${scheduleDemo ? 'active' : ''}`}
+            />
+            {scheduleDemo && <input type="hidden" name="scheduleDemo" value="on" />}
+          </div>
+        </div>
+
+        {scheduleDemo && (
+          <div className="animate-fade-in p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+            <label className="block text-sm font-medium text-indigo-900 mb-1">Demo Date & Time *</label>
+            <div className="flex gap-2">
+              <input 
+                type="date" 
+                id="demoDate" 
+                name="demoDate" 
+                required 
+                defaultValue={initialData?.demo?.scheduledAt ? new Date(initialData.demo.scheduledAt).toISOString().slice(0, 10) : ''}
+                className="w-full rounded-lg border border-indigo-200 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" 
+              />
+              <input 
+                type="text" 
+                name="demoTimeValue" 
+                placeholder="12:30"
+                required 
+                defaultValue={initialData?.demo?.scheduledTime?.split(' ')[0] || ''}
+                className="w-24 rounded-lg border border-indigo-200 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" 
+              />
+              <select 
+                name="demoTimeAmPm"
+                defaultValue={initialData?.demo?.scheduledTime?.split(' ')[1] || 'PM'}
+                className="rounded-lg border border-indigo-200 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="pt-4 flex items-center justify-between border-t">
+      <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
         <div className="flex items-center gap-2">
           {initialData ? (
             <Button type="button" variant="ghost" onClick={() => setShowDeleteConfirm(true)} disabled={isPending} className="text-rose-600 hover:text-rose-700 hover:bg-rose-50">Delete</Button>
@@ -230,9 +297,18 @@ export function LeadForm({
       </div>
     </form>
 
-      ) : (
+      ) : activeTab === 'activity' ? (
         <div className="flex-1 -mx-6 -mb-6 min-h-[400px]">
           <ActivityTimeline leadId={initialData.id} activities={initialData.activities} />
+        </div>
+      ) : (
+        <div className="flex-1 -mx-6 -mb-6 min-h-[400px]">
+          <FollowUpsList 
+            leadId={initialData.id} 
+            initialFollowUps={initialData.followUps || []} 
+            initialFollowUpStatus={initialData.followUpStatus || 'ONGOING'}
+            onStatusChange={() => {}}
+          />
         </div>
       )}
 

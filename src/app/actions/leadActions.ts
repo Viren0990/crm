@@ -59,6 +59,11 @@ export async function createLeadAction(formData: FormData) {
     const demoTimeValue = formData.get('demoTimeValue') as string
     const demoTimeAmPm = formData.get('demoTimeAmPm') as string
     const demoTime = demoTimeValue ? `${demoTimeValue} ${demoTimeAmPm}` : ''
+    const scheduleDemo = formData.get('scheduleDemo') === 'on'
+
+    if (scheduleDemo) {
+      data.status = 'DEMO_SCHEDULED'
+    }
 
     const lead = await prisma.lead.create({
       data: {
@@ -74,7 +79,7 @@ export async function createLeadAction(formData: FormData) {
     })
 
     // If created as DEMO_SCHEDULED directly
-    if (data.status === 'DEMO_SCHEDULED' && demoTime) {
+    if (scheduleDemo && demoTime && demoDate) {
       await prisma.demo.create({
         data: {
           leadId: lead.id,
@@ -118,6 +123,11 @@ export async function updateLeadAction(leadId: string, formData: FormData) {
     const demoTimeValue = formData.get('demoTimeValue') as string
     const demoTimeAmPm = formData.get('demoTimeAmPm') as string
     const demoTime = demoTimeValue ? `${demoTimeValue} ${demoTimeAmPm}` : ''
+    const scheduleDemo = formData.get('scheduleDemo') === 'on'
+
+    if (scheduleDemo) {
+      data.status = 'DEMO_SCHEDULED'
+    }
 
     const existingLead = await prisma.lead.findUnique({ where: { id: leadId } })
     
@@ -139,8 +149,8 @@ export async function updateLeadAction(leadId: string, formData: FormData) {
       })
     }
 
-    // Auto-create Demo if status is DEMO_SCHEDULED and it doesn't exist yet
-    if (data.status === 'DEMO_SCHEDULED') {
+    // Auto-create Demo if scheduleDemo is true and it doesn't exist yet
+    if (scheduleDemo) {
       const existingDemo = await prisma.demo.findUnique({ where: { leadId } })
       if (!existingDemo) {
         await prisma.demo.create({
