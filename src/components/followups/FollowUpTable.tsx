@@ -5,11 +5,9 @@ import { Badge } from '@/components/ui/Badge'
 import { SlideOver } from '@/components/ui/SlideOver'
 import { FollowUpsList } from '@/components/leads/FollowUpsList'
 import { formatDate } from '@/lib/utils'
-import { ArrowDownAZ, ArrowUpAZ, Search, MessageSquare, Rocket, ThumbsUp } from 'lucide-react'
+import { ArrowDownAZ, ArrowUpAZ, Search, MessageSquare, Rocket } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { createOnboardingAction } from '@/app/actions/onboardingActions'
-import { markLeadPositiveAction } from '@/app/actions/leadActions'
 import { useRouter } from 'next/navigation'
 
 export function FollowUpTable({ initialLeads }: { initialLeads: any[] }) {
@@ -19,8 +17,6 @@ export function FollowUpTable({ initialLeads }: { initialLeads: any[] }) {
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [searchQuery, setSearchQuery] = useState('')
   const router = useRouter()
-  const [markPositiveLead, setMarkPositiveLead] = useState<any | null>(null)
-  const [isMarkingPositive, setIsMarkingPositive] = useState(false)
 
   useEffect(() => {
     setLeads(initialLeads)
@@ -156,16 +152,7 @@ export function FollowUpTable({ initialLeads }: { initialLeads: any[] }) {
                   </td>
                   <td onClick={e => e.stopPropagation()}>
                     <div className="flex items-center gap-2">
-                      {!lead.isPositive && (
-                        <button
-                          onClick={() => setMarkPositiveLead(lead)}
-                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors"
-                          title="Mark as Positive Lead"
-                        >
-                          <ThumbsUp className="w-3.5 h-3.5" />
-                          Positive
-                        </button>
-                      )}
+
                       <Button 
                         size="sm" 
                         variant="secondary" 
@@ -203,22 +190,6 @@ export function FollowUpTable({ initialLeads }: { initialLeads: any[] }) {
         })()}
       </SlideOver>
 
-      <ConfirmModal
-        isOpen={markPositiveLead !== null}
-        onClose={() => setMarkPositiveLead(null)}
-        onConfirm={async () => {
-          if (markPositiveLead) {
-            setIsMarkingPositive(true)
-            await markLeadPositiveAction(markPositiveLead.id)
-            setIsMarkingPositive(false)
-            setMarkPositiveLead(null)
-          }
-        }}
-        title="Mark as Positive Lead"
-        description={`Move "${markPositiveLead?.name}" to the Positive Leads dashboard?`}
-        confirmText="Yes, Mark Positive"
-        isPending={isMarkingPositive}
-      />
     </div>
   )
 }

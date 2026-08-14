@@ -1,30 +1,28 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Badge } from '@/components/ui/Badge'
 import { SlideOver } from '@/components/ui/SlideOver'
 import { LeadForm } from '@/components/leads/LeadForm'
-import { LEAD_STATUSES, LEAD_TYPES, LEAD_PRIORITIES, LEAD_STAFF } from '@/lib/constants'
-import { formatDate, getStaleLevel, getBadgeClasses, getSolidBadgeClasses, cn } from '@/lib/utils'
-import { AlertCircle, AlertTriangle, ArrowDownAZ, ArrowUpAZ, Search, Mail, MessageSquare, Download, ThumbsUp } from 'lucide-react'
-import { toggleLeadFieldAction, markLeadPositiveAction } from '@/app/actions/leadActions'
-import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { FollowUpsList } from '@/components/leads/FollowUpsList'
+import { LEAD_PRIORITIES, LEAD_STAFF } from '@/lib/constants'
+import { formatDate, getSolidBadgeClasses, cn } from '@/lib/utils'
+import { ArrowDownAZ, ArrowUpAZ, Search, Mail, MessageSquare, Download, Rocket } from 'lucide-react'
+import { createOnboardingAction } from '@/app/actions/onboardingActions'
+import { Button } from '@/components/ui/Button'
 
-// Using any for leads for quick setup, typically you'd export types from Prisma
 export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
+  const router = useRouter()
   const [leads, setLeads] = useState(initialLeads)
-  const [isPending, startTransition] = useTransition()
   const [editingLead, setEditingLead] = useState<any | null>(null)
-  const [markPositiveLead, setMarkPositiveLead] = useState<any | null>(null)
-  const [isMarkingPositive, setIsMarkingPositive] = useState(false)
+  const [selectedFollowUpLead, setSelectedFollowUpLead] = useState<any | null>(null)
+  const [isFollowUpSlideOverOpen, setIsFollowUpSlideOverOpen] = useState(false)
 
   useEffect(() => {
     setLeads(initialLeads)
   }, [initialLeads])
 
-  // Status Tabs
-  const tabs = ['All', 'NEW', 'CONTACTED', 'QUALIFIED', 'DEMO_SCHEDULED', 'LOST']
-  const [activeTab, setActiveTab] = useState('All')
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [searchQuery, setSearchQuery] = useState('')
   const [staffFilter, setStaffFilter] = useState('All')
@@ -36,10 +34,7 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
   ])).sort()
 
   const filteredLeads = leads.filter(lead => {
-    // 1. Tab filter
-    if (activeTab !== 'All' && lead.status !== activeTab) return false
-    
-    // 2. Staff filter
+    // 1. Staff filter
     if (staffFilter !== 'All') {
       if (staffFilter === 'Unassigned') {
         if (lead.staff && lead.staff.trim() !== '') return false
@@ -93,7 +88,7 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `leads_export_${activeTab.toLowerCase()}_${new Date().getTime()}.csv`);
+    link.setAttribute('download', `leads_export_${new Date().getTime()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -104,19 +99,6 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
       {/* Tabs Row */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 overflow-x-auto">
         <div className="flex items-center gap-2 flex-1">
-          {tabs.map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                activeTab === tab 
-                  ? 'bg-indigo-600 text-white' 
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-              }`}
-            >
-              {tab === 'All' ? 'All' : LEAD_STATUSES.find(s => s.value === tab)?.label || tab}
-            </button>
-          ))}
         </div>
         <div className="relative flex items-center shrink-0">
           <Search className="w-4 h-4 text-gray-400 absolute left-3" />
@@ -161,8 +143,7 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
               <th>Contact</th>
               <th>Assigned Staff</th>
               <th>Address / City</th>
-              <th>Type / Source</th>
-              <th>Status</th>
+              <th>Follow-Ups</th>
               <th>Notes</th>
               <th className="text-center">Actions</th>
             </tr>
@@ -170,14 +151,12 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
           <tbody>
             {filteredLeads.length === 0 ? (
               <tr>
-                <td colSpan={10} className="text-center py-12 text-gray-500">
+                <td colSpan={9} className="text-center py-12 text-gray-500">
                   No leads found for this filter.
                 </td>
               </tr>
             ) : filteredLeads.map((lead, index) => {
               const priority = LEAD_PRIORITIES.find(p => p.value === lead.priority)
-              const status = LEAD_STATUSES.find(s => s.value === lead.status)
-              const type = LEAD_TYPES.find(t => t.value === lead.type)
 
               return (
                 <tr key={lead.id} className="group">
@@ -226,27 +205,40 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
                     <span className="text-sm text-gray-700">{lead.city || '—'}</span>
                   </td>
                   <td>
-                    <div className="flex items-center gap-2">
-                      {type && <Badge color={type.color}>{type.label}</Badge>}
-                      <span className="text-xs text-gray-500">{lead.source || '—'}</span>
+                    <div 
+                      className="cursor-pointer hover:opacity-80 inline-block"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedFollowUpLead(lead);
+                        setIsFollowUpSlideOverOpen(true);
+                      }}
+                      title="Manage Follow-Ups"
+                    >
+                      {lead.followUpStatus === 'COMPLETED' ? (
+                        <Badge color="emerald">Completed</Badge>
+                      ) : lead.followUpStatus === 'LOST' ? (
+                        <Badge color="rose">Lost</Badge>
+                      ) : (
+                        <Badge color="amber">Ongoing ({lead.followUps?.length || 0})</Badge>
+                      )}
                     </div>
-                  </td>
-                  <td>
-                    {status && <Badge color={status.color}>{status.label}</Badge>}
                   </td>
                   <td>
                     <span className="text-xs text-gray-600 line-clamp-2 max-w-[160px]">{lead.notes || '—'}</span>
                   </td>
-                  <td>
+                  <td onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-center">
-                      <button
-                        onClick={() => setMarkPositiveLead(lead)}
-                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors opacity-0 group-hover:opacity-100"
-                        title="Mark as Positive Lead"
+                      <Button 
+                        size="sm" 
+                        variant="secondary" 
+                        className="h-7 text-xs px-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                        onClick={async () => {
+                          await createOnboardingAction(lead.id)
+                          router.push('/onboarding')
+                        }}
                       >
-                        <ThumbsUp className="w-3.5 h-3.5" />
-                        Positive
-                      </button>
+                        <Rocket className="w-3 h-3 mr-1" /> Onboard
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -281,22 +273,27 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
         )}
       </SlideOver>
 
-      <ConfirmModal
-        isOpen={markPositiveLead !== null}
-        onClose={() => setMarkPositiveLead(null)}
-        onConfirm={async () => {
-          if (markPositiveLead) {
-            setIsMarkingPositive(true)
-            await markLeadPositiveAction(markPositiveLead.id)
-            setIsMarkingPositive(false)
-            setMarkPositiveLead(null)
-          }
-        }}
-        title="Mark as Positive Lead"
-        description={`Move "${markPositiveLead?.name}" to the Positive Leads dashboard? You can manage follow-ups from there.`}
-        confirmText="Yes, Mark Positive"
-        isPending={isMarkingPositive}
-      />
+      <SlideOver 
+        isOpen={isFollowUpSlideOverOpen} 
+        onClose={() => setIsFollowUpSlideOverOpen(false)}
+        title="Follow Ups"
+      >
+        {selectedFollowUpLead && (() => {
+          const freshLead = leads.find((l: any) => l.id === selectedFollowUpLead.id) || selectedFollowUpLead;
+          return (
+            <FollowUpsList 
+              leadId={freshLead.id} 
+              initialFollowUps={freshLead.followUps || []} 
+              initialFollowUpStatus={freshLead.followUpStatus || 'ONGOING'}
+              onStatusChange={(newStatus) => {
+                if (newStatus === 'LOST') {
+                  setIsFollowUpSlideOverOpen(false);
+                }
+              }}
+            />
+          );
+        })()}
+      </SlideOver>
     </div>
   )
 }
