@@ -506,12 +506,14 @@ export async function getNewLeads() {
   })
 }
 
-// Leads that have been claimed by someone
-export async function getAssignedLeads() {
+// Leads claimed by one caller, or (with no name) leads assigned to names outside LEAD_STAFF
+export async function getAssignedLeads(staffName?: string) {
   return prisma.lead.findMany({
     where: {
       createdAt: { gte: VISIBLE_FROM },
-      AND: [{ staff: { not: null } }, { staff: { not: '' } }],
+      ...(staffName
+        ? { staff: staffName }
+        : { AND: [{ staff: { not: null } }, { staff: { not: '' } }, { staff: { notIn: [...LEAD_STAFF] } }] }),
       NOT: LOST_FILTER,
     },
     orderBy: { updatedAt: 'desc' },

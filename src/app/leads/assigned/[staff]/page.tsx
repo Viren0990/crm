@@ -19,10 +19,11 @@ export default async function AssignedLeadsPage({
   const staffName = LEAD_STAFF.find(name => name.toLowerCase() === slug.toLowerCase())
   if (!staffName && slug !== OTHER_SLUG) notFound()
 
-  const leads = await getAssignedLeads()
-  const isKnownStaff = (name: string | null) => (LEAD_STAFF as readonly (string | null)[]).includes(name)
-  const otherLeads = leads.filter(l => !isKnownStaff(l.staff))
-  const pageLeads = staffName ? leads.filter(l => l.staff === staffName) : otherLeads
+  // Both queries run at the same time
+  const [pageLeads, otherLeads] = await Promise.all([
+    staffName ? getAssignedLeads(staffName) : getAssignedLeads(),
+    staffName ? getAssignedLeads() : Promise.resolve([]),
+  ])
 
   return (
     <div className="flex flex-col h-full min-h-0 p-6 gap-6 animate-fade-in">
@@ -31,7 +32,7 @@ export default async function AssignedLeadsPage({
         description={`${pageLeads.length} assigned ${pageLeads.length === 1 ? 'lead' : 'leads'}.`}
       />
 
-      {staffName && otherLeads.length > 0 && (
+      {otherLeads.length > 0 && (
         <Link href={`/leads/assigned/${OTHER_SLUG}`} className="text-sm text-indigo-600 hover:underline -mt-3">
           {otherLeads.length} {otherLeads.length === 1 ? 'lead is' : 'leads are'} assigned to other names — view them
         </Link>
