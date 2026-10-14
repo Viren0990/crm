@@ -1,3 +1,7 @@
+// ── Visibility cutoff ─────────────────────────────
+// Leads created / demos scheduled before this date are hidden in the app (still kept in the DB)
+export const VISIBLE_FROM = new Date('2026-10-01T00:00:00+05:30')
+
 // ── Lead Statuses ─────────────────────────────────
 export const LEAD_STATUSES = [
   { value: 'NEW', label: 'New', color: 'blue' },
@@ -74,7 +78,7 @@ export const ACTIVITY_TYPES = {
 } as const
 
 // ── Staff Options ─────────────────────────────────
-export const LEAD_STAFF = ['Ritu', 'Pooja', 'Anuja'] as const
+export const LEAD_STAFF = ['Ritu', 'Anuja', 'Pooja'] as const
 export const DEMO_STAFF = ['Jaspal', 'Raj'] as const
 
 // ── Onboarding Checklist Fields ───────────────────

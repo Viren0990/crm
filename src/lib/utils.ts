@@ -70,6 +70,80 @@ export function formatForDateTimeLocal(date: Date | string | null | undefined): 
   return `${getPart('year')}-${getPart('month')}-${getPart('day')}T${getPart('hour')}:${getPart('minute')}`
 }
 
+// ── India-time date/time inputs ───────────────────
+// Dates and times are entered in India time and stored as the exact moment,
+// so they don't shift with the server's or browser's timezone.
+
+// 'YYYY-MM-DD' for an <input type="date">, as the date falls in India
+export function toIndiaDateInput(date: Date | string | null | undefined): string {
+  return formatForDateTimeLocal(date).slice(0, 10)
+}
+
+// Stored time text ("5 PM", "12:30 PM", "15:30") -> 'HH:mm' for an <input type="time">
+export function timeTextToInput(text: string | null | undefined): string {
+  const match = text?.trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i)
+  if (!match) return ''
+  let hour = Number(match[1])
+  const minute = Number(match[2] || '0')
+  const ampm = match[3]?.toUpperCase()
+  if (hour <= 12 && ampm === 'PM' && hour !== 12) hour += 12
+  if (hour === 12 && ampm === 'AM') hour = 0
+  if (hour > 23 || minute > 59) return ''
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+}
+
+// 'HH:mm' from an <input type="time"> -> "h:mm AM/PM" (the format kept in scheduledTime)
+export function timeInputToText(value: string | null | undefined): string {
+  const match = value?.match(/^(\d{2}):(\d{2})/)
+  if (!match) return ''
+  const hour = Number(match[1])
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  return `${hour % 12 || 12}:${match[2]} ${ampm}`
+}
+
+// Date ('YYYY-MM-DD') + time ('HH:mm') entered in India time -> the exact moment
+export function fromIndiaDateTime(dateStr: string, timeStr?: string | null): Date {
+  return new Date(`${dateStr}T${timeStr || '00:00'}:00+05:30`)
+}
+
+// Imported date (CSV / Excel) -> exact moment in India time, or undefined if unreadable.
+// Accepts Excel serial numbers, "2026-10-05", "05/10/2026" (day first, as used in India),
+// "5-10-26", optional "HH:mm" after the date, and text like "5 Oct 2026" / "October 5, 2026".
+export function parseIndiaDate(value: unknown): Date | undefined {
+  if (value === null || value === undefined || value === '') return undefined
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const build = (year: number, month: number, day: number, hour = 0, minute = 0) => {
+    if (year < 100) year += 2000
+    if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59) return undefined
+    const d = fromIndiaDateTime(`${year}-${pad(month)}-${pad(day)}`, `${pad(hour)}:${pad(minute)}`)
+    // Reject dates that don't exist (e.g. 31/02)
+    return !isNaN(d.getTime()) && toIndiaDateInput(d) === `${year}-${pad(month)}-${pad(day)}` ? d : undefined
+  }
+
+  // Excel stores dates as days since 1899-12-30 (fraction = time of day)
+  const asNumber = typeof value === 'number' ? value : /^\d{5}(\.\d+)?$/.test(String(value).trim()) ? Number(value) : NaN
+  if (!isNaN(asNumber)) {
+    if (asNumber < 20000 || asNumber > 80000) return undefined
+    const utc = new Date(Date.UTC(1899, 11, 30) + Math.round(asNumber * 86400) * 1000)
+    return build(utc.getUTCFullYear(), utc.getUTCMonth() + 1, utc.getUTCDate(), utc.getUTCHours(), utc.getUTCMinutes())
+  }
+
+  const text = String(value).trim()
+  const time = text.match(/[ T](\d{1,2}):(\d{2})/)
+  const [hour, minute] = time ? [Number(time[1]), Number(time[2])] : [0, 0]
+
+  const iso = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
+  if (iso) return build(Number(iso[1]), Number(iso[2]), Number(iso[3]), hour, minute)
+
+  const dayFirst = text.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})(?![\d])/)
+  if (dayFirst) return build(Number(dayFirst[3]), Number(dayFirst[2]), Number(dayFirst[1]), hour, minute)
+
+  // Text months: read the calendar date as written, then pin it to India time
+  const parsed = new Date(text)
+  if (isNaN(parsed.getTime())) return undefined
+  return build(parsed.getFullYear(), parsed.getMonth() + 1, parsed.getDate(), parsed.getHours(), parsed.getMinutes())
+}
+
 // ── Stale detection ───────────────────────────────
 export function getDaysSinceUpdate(date: Date | string): number {
   const d = new Date(date)

@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { toIndiaDateInput, timeTextToInput } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { updateFollowUpAction } from '@/app/actions/followUpActions'
 import { createOnboardingAction } from '@/app/actions/onboardingActions'
@@ -80,25 +81,17 @@ export function FollowUpForm({
               type="date" 
               id="scheduledDate" 
               name="scheduledDate" 
-              defaultValue={initialData.scheduledDate ? new Date(initialData.scheduledDate).toISOString().slice(0, 10) : ''}
+              defaultValue={toIndiaDateInput(initialData.scheduledDate)}
               className="w-full rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" 
             />
             <input 
-              type="text" 
-              name="scheduledTimeValue" 
-              placeholder="12:30"
-              defaultValue={initialData.scheduledTime?.split(' ')[0] || ''}
-              className="w-24 rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" 
+              type="time" 
+              name="scheduledTime" 
+              defaultValue={timeTextToInput(initialData.scheduledTime)}
+              className="w-36 rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" 
             />
-            <select 
-              name="scheduledTimeAmPm"
-              defaultValue={initialData.scheduledTime?.split(' ')[1] || 'PM'}
-              className="rounded-xl border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white"
-            >
-              <option value="AM">AM</option>
-              <option value="PM">PM</option>
-            </select>
           </div>
+          <p className="text-xs text-gray-500 mt-1.5">India time (IST)</p>
         </div>
         
         <div>

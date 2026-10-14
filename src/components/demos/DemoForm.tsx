@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { DEMO_STATUSES, DEMO_STAFF } from '@/lib/constants'
 import { updateDemoAction } from '@/app/actions/demoActions'
-import { formatForDateTimeLocal } from '@/lib/utils'
+import { toIndiaDateInput, timeTextToInput } from '@/lib/utils'
 
 export function DemoForm({ 
   initialData,
@@ -98,27 +98,19 @@ export function DemoForm({
                     type="date" 
                     id="followUpDate" 
                     name="followUpDate" 
-                    defaultValue={initialData?.followUpDate ? new Date(initialData.followUpDate).toISOString().slice(0, 10) : ''}
+                    defaultValue={toIndiaDateInput(initialData?.followUpDate)}
                     required={needsFollowUp}
                     className="w-full rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white" 
                   />
                   <input 
-                    type="text" 
-                    name="followUpTimeValue" 
-                    placeholder="12:30"
-                    defaultValue={initialData?.followUpTime?.split(' ')[0] || ''}
+                    type="time" 
+                    name="followUpTime" 
+                    defaultValue={timeTextToInput(initialData?.followUpTime)}
                     required={needsFollowUp}
-                    className="w-24 rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white" 
+                    className="w-36 rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white" 
                   />
-                  <select 
-                    name="followUpTimeAmPm"
-                    defaultValue={initialData?.followUpTime?.split(' ')[1] || 'PM'}
-                    className="rounded-xl border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white"
-                  >
-                    <option value="AM">AM</option>
-                    <option value="PM">PM</option>
-                  </select>
                 </div>
+                <p className="text-xs text-gray-500 mt-1.5">India time (IST)</p>
               </div>
             )}
           </div>

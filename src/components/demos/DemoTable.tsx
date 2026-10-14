@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/Badge'
 import { SlideOver } from '@/components/ui/SlideOver'
 import { DemoForm } from '@/components/demos/DemoForm'
 import { DEMO_STATUSES, LEAD_TYPES } from '@/lib/constants'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate, toIndiaDateInput } from '@/lib/utils'
 import { ArrowDownAZ, ArrowUpAZ, Search } from 'lucide-react'
 
 export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
@@ -127,9 +127,8 @@ export function DemoTable({ initialDemos }: { initialDemos: any[] }) {
               const status = DEMO_STATUSES.find(s => s.value === demo.status)
               const type = LEAD_TYPES.find(t => t.value === demo.type)
               
-              const today = new Date()
-              today.setHours(0, 0, 0, 0)
-              const isPastDue = demo.status === 'PENDING' && new Date(demo.scheduledAt) < today
+              // Compare calendar days in India time ('YYYY-MM-DD' strings sort correctly)
+              const isPastDue = demo.status === 'PENDING' && toIndiaDateInput(demo.scheduledAt) < toIndiaDateInput(new Date())
 
               return (
                 <tr 

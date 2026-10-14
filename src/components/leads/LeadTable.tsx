@@ -8,13 +8,31 @@ import { LeadForm } from '@/components/leads/LeadForm'
 import { FollowUpsList } from '@/components/leads/FollowUpsList'
 import { LEAD_PRIORITIES, LEAD_STAFF } from '@/lib/constants'
 import { formatDate, getSolidBadgeClasses, cn } from '@/lib/utils'
-import { ArrowDownAZ, ArrowUpAZ, Search, Mail, MessageSquare, Download, Rocket } from 'lucide-react'
+import { ArrowDownAZ, ArrowUpAZ, Search, Mail, MessageSquare, Download, Rocket, Undo2, RotateCcw } from 'lucide-react'
 import { createOnboardingAction } from '@/app/actions/onboardingActions'
+import { claimLeadAction, unassignLeadAction, restoreLostLeadAction } from '@/app/actions/leadActions'
 import { Button } from '@/components/ui/Button'
 
-export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
+// mode 'new': unclaimed pool with Assign button; 'assigned': claimed leads with Onboard / Unassign; 'lost': Restore
+export function LeadTable({ initialLeads, mode = 'all' }: { initialLeads: any[], mode?: 'all' | 'new' | 'assigned' | 'lost' }) {
   const router = useRouter()
   const [leads, setLeads] = useState(initialLeads)
+  const [pendingLeadId, setPendingLeadId] = useState<string | null>(null)
+  const showStaffColumn = mode !== 'new'
+  const showStaffFilter = mode === 'all'
+
+  // Optimistically drop the lead from this view, then sync with the server
+  const moveLeadOut = async (leadId: string, action: () => Promise<{ success: boolean, error?: string }>) => {
+    setPendingLeadId(leadId)
+    const result = await action()
+    setPendingLeadId(null)
+    if (result.success) {
+      setLeads(prev => prev.filter(l => l.id !== leadId))
+    } else {
+      alert(result.error || 'Something went wrong')
+    }
+    router.refresh()
+  }
   const [editingLead, setEditingLead] = useState<any | null>(null)
   const [selectedFollowUpLead, setSelectedFollowUpLead] = useState<any | null>(null)
   const [isFollowUpSlideOverOpen, setIsFollowUpSlideOverOpen] = useState(false)
@@ -110,7 +128,7 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
             className="pl-9 pr-4 py-1.5 rounded-full border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48 transition-all focus:w-64"
           />
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        {showStaffFilter && <div className="flex items-center gap-2 shrink-0">
           <select
             value={staffFilter}
             onChange={(e) => setStaffFilter(e.target.value)}
@@ -122,7 +140,7 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
             ))}
             <option value="Unassigned">Unassigned</option>
           </select>
-        </div>
+        </div>}
         <button
           onClick={() => setSortOrder(s => s === 'desc' ? 'asc' : 'desc')}
           className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors shrink-0"
@@ -141,7 +159,7 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
               <th className="w-24">Date</th>
               <th>Name</th>
               <th>Contact</th>
-              <th>Assigned Staff</th>
+              {showStaffColumn && <th>Assigned Staff</th>}
               <th>Address / City</th>
               <th>Follow-Ups</th>
               <th>Notes</th>
@@ -151,8 +169,8 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
           <tbody>
             {filteredLeads.length === 0 ? (
               <tr>
-                <td colSpan={9} className="text-center py-12 text-gray-500">
-                  No leads found for this filter.
+                <td colSpan={showStaffColumn ? 9 : 8} className="text-center py-12 text-gray-500">
+                  {mode === 'new' ? 'No new leads waiting to be assigned.' : 'No leads found for this filter.'}
                 </td>
               </tr>
             ) : filteredLeads.map((lead, index) => {
@@ -198,9 +216,9 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
                       )}
                     </div>
                   </td>
-                  <td>
+                  {showStaffColumn && <td>
                     <span className="text-sm font-medium text-gray-700">{lead.staff || '—'}</span>
-                  </td>
+                  </td>}
                   <td>
                     <span className="text-sm text-gray-700">{lead.city || '—'}</span>
                   </td>
@@ -227,18 +245,65 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
                     <span className="text-xs text-gray-600 line-clamp-2 max-w-[160px]">{lead.notes || '—'}</span>
                   </td>
                   <td onClick={e => e.stopPropagation()}>
-                    <div className="flex items-center justify-center">
-                      <Button 
-                        size="sm" 
-                        variant="secondary" 
-                        className="h-7 text-xs px-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                        onClick={async () => {
-                          await createOnboardingAction(lead.id)
-                          router.push('/onboarding')
-                        }}
-                      >
-                        <Rocket className="w-3 h-3 mr-1" /> Onboard
-                      </Button>
+                    <div className="flex items-center justify-center gap-1.5">
+                      {mode === 'lost' ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-7 text-xs px-2"
+                          isLoading={pendingLeadId === lead.id}
+                          title={lead.staff ? `Send back to ${lead.staff}` : 'Send back to New Leads'}
+                          onClick={() => moveLeadOut(lead.id, () => restoreLostLeadAction(lead.id))}
+                        >
+                          <RotateCcw className="w-3 h-3 mr-1" /> Restore
+                        </Button>
+                      ) : mode === 'new' ? (
+                        <select
+                          value=""
+                          disabled={pendingLeadId === lead.id}
+                          onChange={(e) => {
+                            const staffName = e.target.value
+                            if (staffName) moveLeadOut(lead.id, () => claimLeadAction(lead.id, staffName))
+                          }}
+                          className="h-7 text-xs px-2 rounded-xl border border-indigo-200 text-indigo-700 bg-white hover:bg-indigo-50 font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                          title="Assign this lead"
+                        >
+                          <option value="">{pendingLeadId === lead.id ? 'Assigning...' : 'Assign to...'}</option>
+                          {LEAD_STAFF.map(staff => (
+                            <option key={staff} value={staff}>{staff}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <>
+                          <Button 
+                            size="sm" 
+                            variant="secondary" 
+                            className="h-7 text-xs px-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                            onClick={async () => {
+                              await createOnboardingAction(lead.id)
+                              router.push('/onboarding')
+                            }}
+                          >
+                            <Rocket className="w-3 h-3 mr-1" /> Onboard
+                          </Button>
+                          {mode === 'assigned' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs px-2"
+                              isLoading={pendingLeadId === lead.id}
+                              title="Send back to New Leads"
+                              onClick={() => {
+                                if (confirm(`Send ${lead.name} back to New Leads?`)) {
+                                  moveLeadOut(lead.id, () => unassignLeadAction(lead.id))
+                                }
+                              }}
+                            >
+                              <Undo2 className="w-3 h-3 mr-1" /> Unassign
+                            </Button>
+                          )}
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -288,7 +353,12 @@ export function LeadTable({ initialLeads }: { initialLeads: any[] }) {
               onStatusChange={(newStatus) => {
                 if (newStatus === 'LOST') {
                   setIsFollowUpSlideOverOpen(false);
+                  // Lost leads leave the New / Assigned lists and show up on the Lost Leads page
+                  if (mode === 'new' || mode === 'assigned') {
+                    setLeads(prev => prev.filter(l => l.id !== freshLead.id));
+                  }
                 }
+                router.refresh();
               }}
             />
           );

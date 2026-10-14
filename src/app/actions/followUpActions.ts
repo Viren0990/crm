@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { formatForDateTimeLocal } from '@/lib/utils'
+import { formatForDateTimeLocal, fromIndiaDateTime, timeInputToText, toIndiaDateInput } from '@/lib/utils'
 
 export async function getFollowUps() {
   return prisma.followUp.findMany({
@@ -39,9 +39,9 @@ export async function getLeadsWithFollowUps() {
 
 export async function createFollowUpAction(leadId: string, formData: FormData) {
   try {
+    // Entered in India time ('YYYY-MM-DD' and optional 'HH:mm')
     const scheduledDate = formData.get('scheduledDate') as string
-    const scheduledTimeAmPm = formData.get('scheduledTimeAmPm') as string
-    const scheduledTimeValue = formData.get('scheduledTimeValue') as string
+    const scheduledTimeInput = formData.get('scheduledTime') as string
     const notes = formData.get('notes') as string
     const conductedBy = formData.get('conductedBy') as string
 
@@ -49,7 +49,7 @@ export async function createFollowUpAction(leadId: string, formData: FormData) {
       return { success: false, error: 'Date is required' }
     }
 
-    const scheduledTime = scheduledTimeValue ? `${scheduledTimeValue} ${scheduledTimeAmPm}` : null
+    const scheduledTime = timeInputToText(scheduledTimeInput) || null
 
     // Determine attempt number
     const existingFollowUps = await prisma.followUp.count({ where: { leadId } })
@@ -59,7 +59,7 @@ export async function createFollowUpAction(leadId: string, formData: FormData) {
       data: {
         leadId,
         attemptNumber,
-        scheduledDate: new Date(scheduledDate),
+        scheduledDate: fromIndiaDateTime(scheduledDate, scheduledTimeInput),
         scheduledTime,
         notes,
         conductedBy
@@ -83,18 +83,17 @@ export async function updateFollowUpAction(id: string, formData: FormData) {
     const notes = formData.get('notes') as string
     const result = formData.get('result') as string
     
-    // Also allow updating date/time
+    // Also allow updating date/time (entered in India time)
     const scheduledDate = formData.get('scheduledDate') as string
-    const scheduledTimeAmPm = formData.get('scheduledTimeAmPm') as string
-    const scheduledTimeValue = formData.get('scheduledTimeValue') as string
+    const scheduledTimeInput = formData.get('scheduledTime') as string
     
     const data: any = { status, notes, result }
     
     if (scheduledDate) {
-      data.scheduledDate = new Date(scheduledDate)
+      data.scheduledDate = fromIndiaDateTime(scheduledDate, scheduledTimeInput)
     }
-    if (scheduledTimeValue !== null) { // Might be empty string
-       data.scheduledTime = scheduledTimeValue ? `${scheduledTimeValue} ${scheduledTimeAmPm || 'PM'}` : null
+    if (formData.has('scheduledTime')) { // Empty means the time was cleared
+      data.scheduledTime = timeInputToText(scheduledTimeInput) || null
     }
 
     await prisma.followUp.update({
@@ -142,8 +141,8 @@ export async function markDetailsSentAction(leadId: string) {
     
     // 3. Create FollowUp 1 if none exist
     if (existingFollowUps === 0) {
-      const tomorrow = new Date()
-      tomorrow.setDate(tomorrow.getDate() + 1)
+ // Tomorrow at 12:00 PM India time
+      const tomorrow = fromIndiaDateTime(toIndiaDateInput(new Date(Date.now() + 24 * 60 * 60 * 1000)), '12:00')
       
       await prisma.followUp.create({
         data: {
@@ -182,7 +181,7 @@ export async function updateLeadFollowUpStatusAction(leadId: string, status: str
     }
 
     revalidatePath('/')
-    revalidatePath('/leads')
+    revalidatePath('/leads', 'layout')
     revalidatePath('/positive-leads')
     revalidatePath('/followups')
     return { success: true }

@@ -3,10 +3,13 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { unstable_cache } from 'next/cache'
+import { fromIndiaDateTime, timeInputToText } from '@/lib/utils'
+import { VISIBLE_FROM } from '@/lib/constants'
 
-// Get all demos
+// Get all demos (older ones before the cutoff are hidden)
 export async function getDemos() {
   return prisma.demo.findMany({
+    where: { scheduledAt: { gte: VISIBLE_FROM } },
     orderBy: { scheduledAt: 'asc' },
     include: {
       lead: true,
@@ -38,9 +41,9 @@ export async function updateDemoAction(demoId: string, formData: FormData) {
     const conductedBy = formData.get('conductedBy') as string
     const needsFollowUp = formData.get('needsFollowUp') === 'true' || formData.get('needsFollowUp') === 'on'
     const followUpDateStr = formData.get('followUpDate') as string
-    const followUpTimeValue = formData.get('followUpTimeValue') as string
-    const followUpTimeAmPm = formData.get('followUpTimeAmPm') as string
-    const followUpTimeStr = followUpTimeValue ? `${followUpTimeValue} ${followUpTimeAmPm}` : ''
+    // Entered in India time ('HH:mm')
+    const followUpTimeInput = formData.get('followUpTime') as string
+    const followUpTimeStr = timeInputToText(followUpTimeInput)
     
     const data: any = {
       status,
@@ -50,7 +53,7 @@ export async function updateDemoAction(demoId: string, formData: FormData) {
     }
 
     if (needsFollowUp && followUpDateStr) {
-      data.followUpDate = new Date(followUpDateStr)
+      data.followUpDate = fromIndiaDateTime(followUpDateStr, followUpTimeInput)
       data.followUpTime = followUpTimeStr
     } else if (!needsFollowUp) {
       data.followUpDate = null
@@ -98,9 +101,9 @@ export async function updateFollowUpAction(demoId: string, formData: FormData) {
   try {
     const followUpResult = formData.get('followUpResult') as string
     const followUpDateStr = formData.get('followUpDate') as string
-    const followUpTimeValue = formData.get('followUpTimeValue') as string
-    const followUpTimeAmPm = formData.get('followUpTimeAmPm') as string
-    const followUpTimeStr = followUpTimeValue ? `${followUpTimeValue} ${followUpTimeAmPm}` : ''
+    // Entered in India time ('HH:mm')
+    const followUpTimeInput = formData.get('followUpTime') as string
+    const followUpTimeStr = timeInputToText(followUpTimeInput)
     const followUpNotes = formData.get('followUpNotes') as string
     
     const data: any = {
@@ -109,7 +112,7 @@ export async function updateFollowUpAction(demoId: string, formData: FormData) {
     }
 
     if (followUpDateStr) {
-      data.followUpDate = new Date(followUpDateStr)
+      data.followUpDate = fromIndiaDateTime(followUpDateStr, followUpTimeInput)
       data.followUpTime = followUpTimeStr
     } else {
       data.followUpDate = null

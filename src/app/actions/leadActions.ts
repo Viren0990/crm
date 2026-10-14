@@ -2,6 +2,8 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath, revalidateTag } from 'next/cache'
+import { LEAD_STAFF, VISIBLE_FROM } from '@/lib/constants'
+import { fromIndiaDateTime, timeInputToText, timeTextToInput, toIndiaDateInput, formatDate, parseIndiaDate } from '@/lib/utils'
 
 // Get all basic leads
 export async function getLeads() {
@@ -55,10 +57,10 @@ export async function createLeadAction(formData: FormData) {
       status: (formData.get('status') as string) || 'NEW',
     }
 
+    // Demo date + time are entered in India time ('YYYY-MM-DD' and 'HH:mm')
     const demoDate = formData.get('demoDate') as string
-    const demoTimeValue = formData.get('demoTimeValue') as string
-    const demoTimeAmPm = formData.get('demoTimeAmPm') as string
-    const demoTime = demoTimeValue ? `${demoTimeValue} ${demoTimeAmPm}` : ''
+    const demoTimeInput = formData.get('demoTime') as string
+    const demoTime = timeInputToText(demoTimeInput)
     const scheduleDemo = formData.get('scheduleDemo') === 'on'
 
     if (scheduleDemo) {
@@ -84,11 +86,23 @@ export async function createLeadAction(formData: FormData) {
         data: {
           leadId: lead.id,
           type: data.type || 'Both',
-          scheduledAt: new Date(demoDate),
+          scheduledAt: fromIndiaDateTime(demoDate, demoTimeInput),
           scheduledTime: demoTime,
           conductedBy: data.staff || 'TBD',
         }
       })
+
+      // Log activity for demo scheduling
+      await prisma.activity.create({
+        data: {
+          leadId: lead.id,
+          type: 'DEMO_SCHEDULED',
+          title: 'Demo Scheduled',
+          description: `Demo scheduled for ${formatDate(fromIndiaDateTime(demoDate))} at ${demoTime}`,
+          performedBy: data.staff || 'System',
+        }
+      })
+
       revalidatePath('/demos')
     }
 
@@ -119,10 +133,10 @@ export async function updateLeadAction(leadId: string, formData: FormData) {
       status: formData.get('status') as string,
     }
 
+    // Demo date + time are entered in India time ('YYYY-MM-DD' and 'HH:mm')
     const demoDate = formData.get('demoDate') as string
-    const demoTimeValue = formData.get('demoTimeValue') as string
-    const demoTimeAmPm = formData.get('demoTimeAmPm') as string
-    const demoTime = demoTimeValue ? `${demoTimeValue} ${demoTimeAmPm}` : ''
+    const demoTimeInput = formData.get('demoTime') as string
+    const demoTime = timeInputToText(demoTimeInput)
     const scheduleDemo = formData.get('scheduleDemo') === 'on'
 
     if (scheduleDemo) {
@@ -157,25 +171,53 @@ export async function updateLeadAction(leadId: string, formData: FormData) {
           data: {
             leadId,
             type: data.type || 'Both',
-            scheduledAt: demoDate ? new Date(demoDate) : new Date(Date.now() + 24 * 60 * 60 * 1000),
-            scheduledTime: demoTime || '12:00',
+            scheduledAt: demoDate ? fromIndiaDateTime(demoDate, demoTimeInput) : new Date(Date.now() + 24 * 60 * 60 * 1000),
+            scheduledTime: demoTime || '12:00 PM',
             conductedBy: data.staff || 'TBD',
           }
         })
+        
+        // Log activity for demo scheduling
+        await prisma.activity.create({
+          data: {
+            leadId,
+            type: 'DEMO_SCHEDULED',
+            title: 'Demo Scheduled',
+            description: `Demo scheduled for ${demoDate ? formatDate(fromIndiaDateTime(demoDate)) : 'TBD'} at ${demoTime || '12:00 PM'}`,
+            performedBy: data.staff || 'System',
+          }
+        })
+
         revalidatePath('/leads')
     revalidatePath('/positive-leads')
         revalidatePath('/demos')
         revalidatePath('/')
       } else if (demoTime || demoDate) {
-        // Update the existing demo's scheduled time if it was changed
-        const updateData: any = {}
-        if (demoDate) updateData.scheduledAt = new Date(demoDate)
-        if (demoTime) updateData.scheduledTime = demoTime
+        // Update the existing demo only if the date or time actually changed
+        const newDate = demoDate || toIndiaDateInput(existingDemo.scheduledAt)
+        const newTime = demoTime || existingDemo.scheduledTime
+        const dateChanged = newDate !== toIndiaDateInput(existingDemo.scheduledAt)
+        const timeChanged = timeTextToInput(newTime) !== timeTextToInput(existingDemo.scheduledTime)
 
-        await prisma.demo.update({
-          where: { id: existingDemo.id },
-          data: updateData
-        })
+        if (dateChanged || timeChanged) {
+          await prisma.demo.update({
+            where: { id: existingDemo.id },
+            data: {
+              scheduledAt: fromIndiaDateTime(newDate, timeTextToInput(newTime)),
+              scheduledTime: newTime,
+            }
+          })
+          await prisma.activity.create({
+            data: {
+              leadId,
+              type: 'DEMO_SCHEDULED',
+              title: 'Demo Rescheduled',
+              description: `Demo time updated to ${formatDate(fromIndiaDateTime(newDate))} at ${newTime}`,
+              performedBy: data.staff || 'System',
+            }
+          })
+        }
+
         revalidatePath('/demos')
         revalidatePath('/')
       }
@@ -337,22 +379,9 @@ export async function importLeadsAction(leadsData: any[]) {
   try {
     // Map CSV data to Prisma schema
     const dataToInsert = leadsData.map(row => {
-      // Parse custom date if provided (e.g. "25/07/2026", "2026-07-25", "July 25, 2026")
-      let createdAt: Date | undefined = undefined
-      if (row.date) {
-        const parsed = new Date(row.date)
-        if (!isNaN(parsed.getTime())) {
-          createdAt = parsed
-        } else {
-          // Try DD/MM/YYYY format (common in India)
-          const parts = String(row.date).split(/[\/\-.]/)
-          if (parts.length === 3) {
-            const [day, month, year] = parts.map(Number)
-            const d = new Date(year, month - 1, day)
-            if (!isNaN(d.getTime())) createdAt = d
-          }
-        }
-      }
+      // Parse custom date if provided, in India time, day first (e.g. "05/10/2026" = 5 Oct,
+      // "2026-10-05", "5 Oct 2026", or an Excel date cell)
+      const createdAt = parseIndiaDate(row.date)
 
       return {
         name: row.name || 'Unknown Lead',
@@ -448,5 +477,148 @@ export async function markLeadPositiveAction(leadId: string) {
   } catch (error) {
     console.error('Failed to mark lead as positive:', error)
     return { success: false, error: 'Failed to mark lead as positive.' }
+  }
+}
+
+// ── New / Assigned leads ──────────────────────────
+// A lead is "new" while staff is empty; claiming it sets staff to the caller's name.
+
+// A lead counts as lost if either its status or its follow-up journey is LOST
+const LOST_FILTER = { OR: [{ status: 'LOST' }, { followUpStatus: 'LOST' }] }
+
+const leadListInclude = {
+  demo: true,
+  followUps: {
+    orderBy: { attemptNumber: 'asc' as const }
+  }
+}
+
+// Leads nobody has claimed yet
+export async function getNewLeads() {
+  return prisma.lead.findMany({
+    where: {
+      createdAt: { gte: VISIBLE_FROM },
+      OR: [{ staff: null }, { staff: '' }],
+      NOT: LOST_FILTER,
+    },
+    orderBy: { updatedAt: 'desc' },
+    include: leadListInclude,
+  })
+}
+
+// Leads that have been claimed by someone
+export async function getAssignedLeads() {
+  return prisma.lead.findMany({
+    where: {
+      createdAt: { gte: VISIBLE_FROM },
+      AND: [{ staff: { not: null } }, { staff: { not: '' } }],
+      NOT: LOST_FILTER,
+    },
+    orderBy: { updatedAt: 'desc' },
+    include: leadListInclude,
+  })
+}
+
+// Leads marked as lost (assigned or not)
+export async function getLostLeads() {
+  return prisma.lead.findMany({
+    where: {
+      createdAt: { gte: VISIBLE_FROM },
+      ...LOST_FILTER,
+    },
+    orderBy: { updatedAt: 'desc' },
+    include: leadListInclude,
+  })
+}
+
+// Bring a lost lead back: it returns to Assigned (or New if nobody had claimed it)
+export async function restoreLostLeadAction(leadId: string) {
+  try {
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: { status: 'CONTACTED', followUpStatus: 'ONGOING' }
+    })
+
+    await prisma.activity.create({
+      data: {
+        leadId,
+        type: 'STATUS_CHANGE',
+        title: 'Restored from Lost Leads',
+        performedBy: 'System',
+      }
+    })
+
+    revalidatePath('/leads', 'layout')
+    revalidatePath('/')
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to restore lead:', error)
+    return { success: false, error: 'Failed to restore lead.' }
+  }
+}
+
+// Assign an unclaimed lead to a caller. Only succeeds if the lead is still unassigned,
+// so two people clicking at the same time can't both claim it.
+export async function claimLeadAction(leadId: string, staffName: string) {
+  try {
+    if (!(LEAD_STAFF as readonly string[]).includes(staffName)) {
+      return { success: false, error: 'Unknown staff member.' }
+    }
+
+    const result = await prisma.lead.updateMany({
+      where: { id: leadId, OR: [{ staff: null }, { staff: '' }] },
+      data: { staff: staffName }
+    })
+
+    if (result.count === 0) {
+      const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { staff: true } })
+      return { success: false, error: lead ? `Already assigned to ${lead.staff}.` : 'Lead not found.' }
+    }
+
+    await prisma.activity.create({
+      data: {
+        leadId,
+        type: 'STATUS_CHANGE',
+        title: `Assigned to ${staffName}`,
+        performedBy: staffName,
+      }
+    })
+
+    revalidatePath('/leads', 'layout')
+    revalidatePath('/')
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to claim lead:', error)
+    return { success: false, error: 'Failed to assign lead.' }
+  }
+}
+
+// Send an assigned lead back to the New Leads pool
+export async function unassignLeadAction(leadId: string) {
+  try {
+    const existingLead = await prisma.lead.findUnique({ where: { id: leadId }, select: { staff: true } })
+    if (!existingLead) return { success: false, error: 'Lead not found.' }
+
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: { staff: null }
+    })
+
+    await prisma.activity.create({
+      data: {
+        leadId,
+        type: 'STATUS_CHANGE',
+        title: `Unassigned from ${existingLead.staff || 'staff'}`,
+        description: 'Lead returned to New Leads',
+        performedBy: existingLead.staff || 'System',
+      }
+    })
+
+    revalidatePath('/leads', 'layout')
+    revalidatePath('/')
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to unassign lead:', error)
+    return { success: false, error: 'Failed to unassign lead.' }
   }
 }

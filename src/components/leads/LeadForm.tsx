@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
 import { LEAD_TYPES, LEAD_PRIORITIES, LEAD_SOURCES, LEAD_STAFF } from '@/lib/constants'
-import { formatForDateTimeLocal } from '@/lib/utils'
+import { formatForDateTimeLocal, toIndiaDateInput, timeTextToInput } from '@/lib/utils'
 import { createLeadAction, updateLeadAction, deleteLeadAction } from '@/app/actions/leadActions'
 import { ActivityTimeline } from '@/components/leads/ActivityTimeline'
 import { FollowUpsList } from '@/components/leads/FollowUpsList'
@@ -196,7 +196,8 @@ export function LeadForm({
               ))}
             </select>
           </div>
-          <div>
+          {/* New leads start unassigned; callers claim them from the New Leads page */}
+          {initialData?.id && <div>
             <label htmlFor="staff-select" className="block text-sm font-medium text-gray-700 mb-1">Assigned Staff</label>
             <select 
               id="staff-select" 
@@ -223,7 +224,7 @@ export function LeadForm({
                 className="w-full mt-2 rounded-xl border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none bg-white" 
               />
             )}
-          </div>
+          </div>}
         </div>
 
         <div className="pt-4 border-t border-gray-100">
@@ -260,26 +261,18 @@ export function LeadForm({
                 id="demoDate" 
                 name="demoDate" 
                 required 
-                defaultValue={initialData?.demo?.scheduledAt ? new Date(initialData.demo.scheduledAt).toISOString().slice(0, 10) : ''}
+                defaultValue={toIndiaDateInput(initialData?.demo?.scheduledAt)}
                 className="w-full rounded-lg border border-indigo-200 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" 
               />
               <input 
-                type="text" 
-                name="demoTimeValue" 
-                placeholder="12:30"
+                type="time" 
+                name="demoTime" 
                 required 
-                defaultValue={initialData?.demo?.scheduledTime?.split(' ')[0] || ''}
-                className="w-24 rounded-lg border border-indigo-200 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" 
+                defaultValue={timeTextToInput(initialData?.demo?.scheduledTime)}
+                className="w-36 rounded-lg border border-indigo-200 px-4 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" 
               />
-              <select 
-                name="demoTimeAmPm"
-                defaultValue={initialData?.demo?.scheduledTime?.split(' ')[1] || 'PM'}
-                className="rounded-lg border border-indigo-200 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
-              >
-                <option value="AM">AM</option>
-                <option value="PM">PM</option>
-              </select>
             </div>
+            <p className="text-xs text-indigo-700/70 mt-1.5">India time (IST)</p>
           </div>
         )}
       </div>

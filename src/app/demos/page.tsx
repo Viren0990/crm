@@ -18,7 +18,7 @@ export default async function DemosPage() {
         action={
           <div className="flex items-center gap-3">
             {/* <RefreshButton /> */}
-            <Link href="/leads">
+            <Link href="/leads/assigned/ritu">
               <Button>
                 <CalendarPlus className="w-4 h-4 mr-2" />
                 Schedule via Leads

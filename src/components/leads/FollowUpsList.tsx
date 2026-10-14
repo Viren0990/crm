@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { formatDate } from '@/lib/utils'
+import { formatDate, toIndiaDateInput, timeTextToInput } from '@/lib/utils'
 import { createFollowUpAction, updateFollowUpAction, deleteFollowUpAction, updateLeadFollowUpStatusAction } from '@/app/actions/followUpActions'
 import { Plus, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import { FOLLOW_UP_STATUSES } from '@/lib/constants'
@@ -210,28 +210,19 @@ function FollowUpInlineForm({ leadId, initialData, onCancel, onSuccess }: { lead
             type="date" 
             name="scheduledDate" 
             required
-            defaultValue={initialData?.scheduledDate ? new Date(initialData.scheduledDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)}
+            defaultValue={toIndiaDateInput(initialData?.scheduledDate || new Date())}
             className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-indigo-500" 
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Time</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Time (IST)</label>
           <div className="flex gap-1">
             <input 
-              type="text" 
-              name="scheduledTimeValue" 
-              placeholder="12:30"
-              defaultValue={initialData?.scheduledTime?.split(' ')[0] || ''}
-              className="w-16 rounded-lg border border-gray-300 px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-indigo-500" 
+              type="time" 
+              name="scheduledTime" 
+              defaultValue={timeTextToInput(initialData?.scheduledTime)}
+              className="w-32 rounded-lg border border-gray-300 px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-indigo-500" 
             />
-            <select 
-              name="scheduledTimeAmPm"
-              defaultValue={initialData?.scheduledTime?.split(' ')[1] || 'PM'}
-              className="rounded-lg border border-gray-300 px-1 py-1.5 text-sm outline-none focus:ring-1 focus:ring-indigo-500 bg-white"
-            >
-              <option value="AM">AM</option>
-              <option value="PM">PM</option>
-            </select>
           </div>
         </div>
       </div>
