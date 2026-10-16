@@ -533,6 +533,34 @@ export async function getLostLeads() {
   })
 }
 
+// Mark a lead as lost; same fields as setting the follow-up journey to Lost
+export async function markLeadLostAction(leadId: string) {
+  try {
+    const lead = await prisma.lead.update({
+      where: { id: leadId },
+      data: { status: 'LOST', followUpStatus: 'LOST', isPositive: false },
+      select: { staff: true }
+    })
+
+    await prisma.activity.create({
+      data: {
+        leadId,
+        type: 'STATUS_CHANGE',
+        title: 'Marked as Lost',
+        performedBy: lead.staff || 'System',
+      }
+    })
+
+    revalidatePath('/leads', 'layout')
+    revalidatePath('/positive-leads')
+    revalidatePath('/followups')
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to mark lead as lost:', error)
+    return { success: false, error: 'Failed to mark lead as lost.' }
+  }
+}
+
 // Bring a lost lead back: it returns to Assigned (or New if nobody had claimed it)
 export async function restoreLostLeadAction(leadId: string) {
   try {

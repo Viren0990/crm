@@ -8,9 +8,9 @@ import { LeadForm } from '@/components/leads/LeadForm'
 import { FollowUpsList } from '@/components/leads/FollowUpsList'
 import { LEAD_PRIORITIES, LEAD_STAFF } from '@/lib/constants'
 import { formatDate, getSolidBadgeClasses, cn } from '@/lib/utils'
-import { ArrowDownAZ, ArrowUpAZ, Search, Mail, MessageSquare, Download, Rocket, Undo2, RotateCcw } from 'lucide-react'
+import { ArrowDownAZ, ArrowUpAZ, Search, Mail, MessageSquare, Download, Rocket, Undo2, RotateCcw, XCircle } from 'lucide-react'
 import { createOnboardingAction } from '@/app/actions/onboardingActions'
-import { claimLeadAction, unassignLeadAction, restoreLostLeadAction } from '@/app/actions/leadActions'
+import { claimLeadAction, unassignLeadAction, restoreLostLeadAction, markLeadLostAction } from '@/app/actions/leadActions'
 import { Button } from '@/components/ui/Button'
 
 // mode 'new': unclaimed pool with Assign button; 'assigned': claimed leads with Onboard / Unassign; 'lost': Restore
@@ -300,6 +300,22 @@ export function LeadTable({ initialLeads, mode = 'all' }: { initialLeads: any[],
                               }}
                             >
                               <Undo2 className="w-3 h-3 mr-1" /> Unassign
+                            </Button>
+                          )}
+                          {mode === 'assigned' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                              disabled={pendingLeadId === lead.id}
+                              title="Move to Lost Leads"
+                              onClick={() => {
+                                if (confirm(`Mark ${lead.name} as lost? It will move to Lost Leads.`)) {
+                                  moveLeadOut(lead.id, () => markLeadLostAction(lead.id))
+                                }
+                              }}
+                            >
+                              <XCircle className="w-3 h-3 mr-1" /> Lost
                             </Button>
                           )}
                         </>
