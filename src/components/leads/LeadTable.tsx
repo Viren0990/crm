@@ -275,6 +275,22 @@ export function LeadTable({ initialLeads, mode = 'all' }: { initialLeads: any[],
                         </select>
                       ) : (
                         <>
+                          {mode === 'assigned' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                              disabled={pendingLeadId === lead.id}
+                              title="Move to Lost Leads"
+                              onClick={() => {
+                                if (confirm(`Mark ${lead.name} as lost? It will move to Lost Leads.`)) {
+                                  moveLeadOut(lead.id, () => markLeadLostAction(lead.id))
+                                }
+                              }}
+                            >
+                              <XCircle className="w-3 h-3 mr-1" /> Lost
+                            </Button>
+                          )}
                           <Button 
                             size="sm" 
                             variant="secondary" 
@@ -300,22 +316,6 @@ export function LeadTable({ initialLeads, mode = 'all' }: { initialLeads: any[],
                               }}
                             >
                               <Undo2 className="w-3 h-3 mr-1" /> Unassign
-                            </Button>
-                          )}
-                          {mode === 'assigned' && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 text-xs px-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                              disabled={pendingLeadId === lead.id}
-                              title="Move to Lost Leads"
-                              onClick={() => {
-                                if (confirm(`Mark ${lead.name} as lost? It will move to Lost Leads.`)) {
-                                  moveLeadOut(lead.id, () => markLeadLostAction(lead.id))
-                                }
-                              }}
-                            >
-                              <XCircle className="w-3 h-3 mr-1" /> Lost
                             </Button>
                           )}
                         </>
